@@ -9,6 +9,7 @@ if [ $? -ne 0 ] ; then
    VPC_CIDR_RANGE=\"0.0.0.0/0\"
 fi
 
+#TODO: Find better way to flip ip_forward bit (sysctl?)
 echo 1 > /proc/sys/net/ipv4/ip_forward && echo 0 > /proc/sys/net/ipv4/conf/eth0/send_redirects && /sbin/iptables -t nat -A POSTROUTING -o eth0 -s ${VPC_CIDR_RANGE} -j MASQUERADE
 exit 0
 

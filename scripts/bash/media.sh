@@ -36,4 +36,8 @@ COMMAND+=" /media --recursive\""
 JOB="* * * * * $COMMAND >> /var/log/media_sync_log"
 
 echo $JOB > /etc/cron.d/media_sync
+
+#The next line should make it so that a sync doesn't start while another is in progress. I don't think it works; testing needed.
+#cat <(fgrep -i -v \"$command\" <(crontab -l)) <(echo \"$job\") | crontab -
+
 exit 0
