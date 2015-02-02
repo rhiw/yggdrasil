@@ -1,0 +1,756 @@
+{
+    "AWSTemplateFormatVersion" : "2010-09-09",
+    "Description": "Yggdrasil",
+    "Parameters": {
+        "KeyName": {
+            "Type": "String",
+            "Description": "The EC2 Key Pair to allow SSH access to instances"
+        },
+        "AvailabilityZone1": {
+            "Type": "String",
+            "Description": "The letter identifying your first usable AZ (a, b, c, d, or e)",
+            "AllowedValues": ["a", "b", "c", "d", "e"],
+            "Default": "a"
+        },
+        "AvailabilityZone2": {
+            "Type": "String",
+            "Description": "The letter identifying your second usable AZ (a, b, c, d, or e)",
+            "AllowedValues": ["a", "b", "c", "d", "e"],
+            "Default": "b"
+        },
+        "AvailabilityZone3": {
+            "Type": "String",
+            "Description": "The letter identifying your third usable AZ (a, b, c, d, or e)",
+            "AllowedValues": ["a", "b", "c", "d", "e"],
+            "Default": "c"
+        },
+        "EC2InstanceType" : {
+            "Description" : "EC2 instance type",
+            "Type" : "String",
+            "Default" : "c3.2xlarge",
+            "ConstraintDescription" : "must be a valid EC2 instance type."
+        },
+        "HostedZoneName" : {
+            "Type": "String",
+            "Description": "The name of the hosted zone you want to use for DNS",
+        },
+        "VpnCertsS3Prefix": {
+            "Type": "String",
+            "Description" : "The prefix of the VPN certs and keys (for the VPN server) in S3"
+        },
+        "VpnServerConfigS3Path": {
+            "Type": "String",
+            "Description" : "The path to the VPN server config in S3"
+        },
+        "MediaServerS3Path": {
+            "Type": "String",
+            "Description": "The path to the media content in S3"
+        }
+    },
+    "Mappings" : {
+        "CidrMap" : {
+            "VPC" : {"cidr" : "172.16.0.0/16"},
+            "PrivateSubnet1" : {"cidr" : "172.16.0.0/19"},
+            "PrivateSubnet2" : {"cidr" : "172.16.64.0/19"},
+            "PrivateSubnet3" : {"cidr" : "172.16.128.0/19"},
+            "PublicSubnet1" : {"cidr" : "172.16.32.0/20"},
+            "PublicSubnet2" : {"cidr" : "172.16.96.0/20"},
+            "PublicSubnet3" : {"cidr" : "172.16.160.0/20"}         
+        },
+        "NATInstanceMap" : {
+            "us-east-1" : {"64" : "ami-669d560e"}
+        },
+        "VPNInstanceMap" : {
+            "us-east-1" : {"64" : "ami-20c90348"}
+        },
+        "MediaInstanceMap" : {
+            "us-east-1" : {"64" : "ami-864d84ee"}        
+        }
+    },
+    "Resources" : {
+        "VPC" : {
+            "Type" : "AWS::EC2::VPC",
+            "Properties" : {
+                "EnableDnsSupport" : "true",
+                "EnableDnsHostnames" : "true",
+                "CidrBlock" : { "Fn::FindInMap" : [ "CidrMap", "VPC", "cidr"]},
+                "Tags" : [
+                    { "Key" : "Name", "Value" : "Yggdrasil" }
+                ]
+            }
+        },
+        "PrivateSubnet1": {
+            "Type": "AWS::EC2::Subnet",
+            "Properties": {
+                "AvailabilityZone": {"Fn::Join": ["", [{"Ref": "AWS::Region"}, {"Ref": "AvailabilityZone1"}]]}, 
+                "CidrBlock": { "Fn::FindInMap" : [ "CidrMap", "PrivateSubnet1", "cidr" ]},
+                "VpcId": {"Ref": "VPC"},
+                "Tags": [
+                    {"Key": "Name", "Value": "Private Subnet 1"}
+                ]
+            }
+        },
+        "PrivateSubnet2": {
+            "Type": "AWS::EC2::Subnet",
+            "Properties": {
+                "AvailabilityZone": {"Fn::Join": ["", [{"Ref": "AWS::Region"}, {"Ref": "AvailabilityZone2"}]]}, 
+                "CidrBlock": { "Fn::FindInMap" : [ "CidrMap", "PrivateSubnet2", "cidr" ]},
+                "VpcId": {"Ref": "VPC"},
+                "Tags": [
+                    {"Key": "Name", "Value": "Private Subnet 2"}
+                ]
+            }
+        },
+        "PrivateSubnet3": {
+            "Type": "AWS::EC2::Subnet",
+            "Properties": {
+                "AvailabilityZone": {"Fn::Join": ["", [{"Ref": "AWS::Region"}, {"Ref": "AvailabilityZone3"}]]}, 
+                "CidrBlock": { "Fn::FindInMap" : [ "CidrMap", "PrivateSubnet3", "cidr" ]},
+                "VpcId": {"Ref": "VPC"},
+                "Tags": [
+                    {"Key": "Name", "Value": "Private Subnet 3"}
+                ]
+            }
+        },
+        "PublicSubnet1": {
+            "Type": "AWS::EC2::Subnet",
+            "Properties": {
+                "AvailabilityZone": {"Fn::Join": ["", [{"Ref": "AWS::Region"}, {"Ref": "AvailabilityZone1"}]]}, 
+                "CidrBlock": { "Fn::FindInMap" : [ "CidrMap", "PublicSubnet1", "cidr" ]},
+                "VpcId": {"Ref": "VPC"},
+                "Tags": [
+                    {"Key": "Name", "Value": "Public Subnet 1"}
+                ]
+            }
+        },
+        "PublicSubnet2": {
+            "Type": "AWS::EC2::Subnet",
+            "Properties": {
+                "AvailabilityZone": {"Fn::Join": ["", [{"Ref": "AWS::Region"}, {"Ref": "AvailabilityZone2"}]]}, 
+                "CidrBlock": { "Fn::FindInMap" : [ "CidrMap", "PublicSubnet2", "cidr" ]},
+                "VpcId": {"Ref": "VPC"},
+                "Tags": [
+                    {"Key": "Name", "Value": "Public Subnet 2"}
+                ]
+            }
+        },
+        "PublicSubnet3": {
+            "Type": "AWS::EC2::Subnet",
+            "Properties": {
+                "AvailabilityZone": {"Fn::Join": ["", [{"Ref": "AWS::Region"}, {"Ref": "AvailabilityZone3"}]]}, 
+                "CidrBlock": { "Fn::FindInMap" : [ "CidrMap", "PublicSubnet3", "cidr" ]},
+                "VpcId": {"Ref": "VPC"},
+                "Tags": [
+                    {"Key": "Name", "Value": "Public Subnet 3"}
+                ]
+            }
+        },
+        "InternetGateway" : {
+            "Type" : "AWS::EC2::InternetGateway",
+            "Properties" : {
+                "Tags" : [
+                    { "Key" : "Network", "Value" : "Public" }
+                ]
+            }
+        },
+        "AttachIGW" : {
+            "Type" : "AWS::EC2::VPCGatewayAttachment",
+            "Properties" : {
+                "VpcId" : { "Ref" : "VPC" },
+                "InternetGatewayId" : { "Ref" : "InternetGateway" }
+            }
+        },
+        "PublicRouteTable" : {
+            "Type" : "AWS::EC2::RouteTable",
+            "Properties" : {
+                "VpcId" : { "Ref" : "VPC" },
+                "Tags" : [
+                    { "Key" : "Network", "Value" : "Public" },
+                    { "Key" : "Name", "Value" : "Yggdrasil Public" }
+                ]
+            }
+        },
+        "PublicRouteToInternet" : {
+            "Type" : "AWS::EC2::Route",
+            "DependsOn" : "PrivateSubnet1",
+            "Properties" : {
+                "RouteTableId" : { "Ref" : "PublicRouteTable" },
+                "DestinationCidrBlock" : "0.0.0.0/0",
+                "GatewayId" : { "Ref" : "InternetGateway" }
+            }
+        },
+        "PublicRouteToVPNAddresses" : {
+            "Type" : "AWS::EC2::Route",
+            "DependsOn" : ["VPNServer1"],
+            "Properties" : {
+                "RouteTableId" : { "Ref" : "PublicRouteTable" },
+                "DestinationCidrBlock" : "172.17.0.0/16",
+                "InstanceId" : { "Ref" : "VPNServer1" }
+            }
+        },
+        "PublicSubnet1RouteTableAssociation" : {
+            "Type" : "AWS::EC2::SubnetRouteTableAssociation",
+            "Properties" : {
+                "SubnetId" : { "Ref" : "PublicSubnet1" },
+                "RouteTableId" : { "Ref" : "PublicRouteTable" }
+            }
+        },
+        "PublicSubnet2RouteTableAssociation" : {
+            "Type" : "AWS::EC2::SubnetRouteTableAssociation",
+            "Properties" : {
+                "SubnetId" : { "Ref" : "PublicSubnet2" },
+                "RouteTableId" : { "Ref" : "PublicRouteTable" }
+            }
+        },
+        "PublicSubnet3RouteTableAssociation" : {
+            "Type" : "AWS::EC2::SubnetRouteTableAssociation",
+            "Properties" : {
+                "SubnetId" : { "Ref" : "PublicSubnet3" },
+                "RouteTableId" : { "Ref" : "PublicRouteTable" }
+            }
+        },
+        "PrivateRouteTable" : {
+            "Type" : "AWS::EC2::RouteTable",
+            "Properties" : {
+                "VpcId" : { "Ref" : "VPC" },
+                "Tags" : [
+                    { "Key" : "Network", "Value" : "Private" },
+                    { "Key" : "Name", "Value" : "Yggdrasil Private" }
+                ]
+            }
+        },
+        "PrivateRouteToNAT" : {
+            "Type" : "AWS::EC2::Route",
+            "DependsOn" : ["PublicSubnet1", "NATInstance1"],
+            "Properties" : {
+                "RouteTableId" : { "Ref" : "PrivateRouteTable" },
+                "DestinationCidrBlock" : "0.0.0.0/0",
+                "InstanceId" : { "Ref" : "NATInstance1" }
+            }
+        },
+        "PrivateRouteToVPNAddresses" : {
+            "Type" : "AWS::EC2::Route",
+            "DependsOn" : ["VPNServer1"],
+            "Properties" : {
+                "RouteTableId" : { "Ref" : "PrivateRouteTable" },
+                "DestinationCidrBlock" : "172.17.0.0/16",
+                "InstanceId" : { "Ref" : "VPNServer1" }
+            }
+        },
+        "PrivateSubnet1RouteTableAssociation" : {
+            "Type" : "AWS::EC2::SubnetRouteTableAssociation",
+            "Properties" : {
+                "SubnetId" : { "Ref" : "PrivateSubnet1" },
+                "RouteTableId" : { "Ref" : "PrivateRouteTable" }
+            }
+        },
+        "PrivateSubnet2RouteTableAssociation" : {
+            "Type" : "AWS::EC2::SubnetRouteTableAssociation",
+            "Properties" : {
+                "SubnetId" : { "Ref" : "PrivateSubnet2" },
+                "RouteTableId" : { "Ref" : "PrivateRouteTable" }
+            }
+        },
+        "PrivateSubnet3RouteTableAssociation" : {
+            "Type" : "AWS::EC2::SubnetRouteTableAssociation",
+            "Properties" : {
+                "SubnetId" : { "Ref" : "PrivateSubnet3" },
+                "RouteTableId" : { "Ref" : "PrivateRouteTable" }
+            }
+        },
+        "NATInstance1" : {
+            "Type" : "AWS::EC2::Instance",
+            "DependsOn" : "GatewayToInternet",
+            "Properties" : {
+                "InstanceType" : { "Ref" : "EC2InstanceType" },
+                "KeyName" : { "Ref" : "KeyName" },
+                "ImageId": { "Fn::FindInMap" : [ "NATInstanceMap", { "Ref" : "AWS::Region" }, "64"]},
+                "Tags" : [
+                    { "Key" : "Name", "Value" : "NAT1" }
+                ],
+                "NetworkInterfaces" : [{
+                    "GroupSet" : [{ "Ref" : "NATSecurityGroup" }, { "Ref" : "PublicSecurityGroup" }],
+                    "AssociatePublicIpAddress" : "true",
+                    "DeviceIndex" : "0",
+                    "DeleteOnTermination" : "true",
+                    "SubnetId" : { "Ref" : "PublicSubnet1" }
+                }],
+                "SourceDestCheck" : "false",
+                "UserData": {
+                    "Fn::Base64": {
+                        "Fn::Join": [
+                            "\n",[
+                                "#!/bin/bash",
+                                "set -x",
+                                "ETH0_MAC=`/sbin/ifconfig  | /bin/grep eth0 | awk '{print tolower($5)}' | grep '^[0-9a-f]\\{2\\}\\(:[0-9a-f]\\{2\\}\\)\\{5\\}$'`",
+                                "VPC_CIDR_URI=i\"http://169.254.169.254/latest/meta-data/network/interfaces/macs/${ETH0_MAC}/vpc-ipv4-cidr-block\"",
+                                "VPC_CIDR_RANGE=`curl --retry 3 --retry-delay 0 --silent --fail ${VPC_CIDR_URI}`",
+                                "if [ $? -ne 0 ] ; then",
+                                "   VPC_CIDR_RANGE=\"0.0.0.0/0\"",
+                                "fi",
+                                "echo 1 > /proc/sys/net/ipv4/ip_forward && echo 0 > /proc/sys/net/ipv4/conf/eth0/send_redirects && /sbin/iptables -t nat -A POSTROUTING -o eth0 -s ${VPC_CIDR_RANGE} -j MASQUERADE",
+                                "exit 0"
+                            ]
+                        ]
+                    }
+                }
+            }
+        },
+        "VPNServerRoleProfile": {
+            "Type": "AWS::IAM::InstanceProfile",
+            "Properties": {
+                "Path": "/",
+                "Roles": ["vpn_server"]
+            }
+        },
+        "VPNServer1" : {
+            "Type" : "AWS::EC2::Instance",
+            "DependsOn" : "GatewayToInternet",
+            "Properties" : {
+                "InstanceType" : { "Ref" : "EC2InstanceType" },
+                "KeyName" : { "Ref" : "KeyName" },
+                "ImageId": { "Fn::FindInMap" : [ "VPNInstanceMap", { "Ref" : "AWS::Region" }, "64"]},
+                "Tags" : [
+                    { "Key" : "Name", "Value" : "VPN1" }
+                ],
+                "NetworkInterfaces" : [{
+                    "GroupSet" : [{ "Ref" : "VPNServerSecurityGroup" }, { "Ref" : "PublicSecurityGroup" }, { "Ref" : "VPNAddressesSecurityGroup"}],
+                    "AssociatePublicIpAddress" : "true",
+                    "DeviceIndex" : "0",
+                    "DeleteOnTermination" : "true",
+                    "SubnetId" : { "Ref" : "PublicSubnet1" }
+                }],
+                "SourceDestCheck" : "false",
+                "IamInstanceProfile" : { "Ref": "VPNServerRoleProfile" },
+                "UserData": {
+                    "Fn::Base64": {
+                        "Fn::Join": [
+                            "\n",[
+                                "#!/bin/bash",
+                                "set -x",
+                                "ETH0_MAC=`/sbin/ifconfig  | /bin/grep eth0 | awk '{print tolower($5)}' | grep '^[0-9a-f]\\{2\\}\\(:[0-9a-f]\\{2\\}\\)\\{5\\}$'`",
+                                "VPC_CIDR_URI=i\"http://169.254.169.254/latest/meta-data/network/interfaces/macs/${ETH0_MAC}/vpc-ipv4-cidr-block\"",
+                                "VPC_CIDR_RANGE=`curl --retry 3 --retry-delay 0 --silent --fail ${VPC_CIDR_URI}`",
+                                "if [ $? -ne 0 ] ; then",
+                                "   VPC_CIDR_RANGE=\"0.0.0.0/0\"",
+                                "fi",
+                                "echo 1 > /proc/sys/net/ipv4/ip_forward && echo 0 > /proc/sys/net/ipv4/conf/eth0/send_redirects && /sbin/iptables -t nat -A POSTROUTING -o eth0 -s ${VPC_CIDR_RANGE} -j MASQUERADE",
+                                "mkdir /etc/openvpn/easy-rsa",
+                                "mkdir /etc/openvpn/easy-rsa/keys",
+                                "wget https://github.com/OpenVPN/easy-rsa/releases/download/2.2.2/EasyRSA-2.2.2.tgz",
+                                "tar -xvf EasyRSA-2.2.2.tgz",
+                                "sudo cp -r EasyRSA-2.2.2/* /etc/openvpn/easy-rsa/",
+                                "cd /etc/openvpn/easy-rsa",
+                                {"Fn::Join": [" ", ["aws", "s3", "cp", {"Fn::Join": ["", ["s3://", {"Ref": "VpnCertsS3Prefix"}]]}, "/etc/openvpn/easy-rsa/keys", "--recursive" ]]},
+                                {"Fn::Join": [" ", ["aws", "s3", "cp", {"Fn::Join": ["", ["s3://", {"Ref": "VpnServerConfigS3Path"}]]}, "/etc/openvpn/" ]]},
+                                "service openvpn start",
+                                "exit 0"
+                            ]
+                        ]
+                    }
+                }
+            }
+        },
+        "MediaServerRoleProfile": {
+            "Type": "AWS::IAM::InstanceProfile",
+            "Properties": {
+                "Path": "/",
+                "Roles": ["media_server"]
+            }
+        },   
+        "MediaServer1" : {
+            "Type" : "AWS::EC2::Instance",
+            "Properties" : {
+                "InstanceType" : { "Ref" : "EC2InstanceType" },
+                "KeyName" : { "Ref" : "KeyName" },
+                "ImageId": { "Fn::FindInMap" : [ "MediaInstanceMap", { "Ref" : "AWS::Region" }, "64"]},
+                "Tags" : [
+                    { "Key" : "Name", "Value" : "Media1" }
+                ],
+                "NetworkInterfaces" : [{
+                    "GroupSet" : [{ "Ref" : "PrivateSecurityGroup" }, { "Ref" :  "VPNAddressesSecurityGroup"}],
+                    "AssociatePublicIpAddress" : "false",
+                    "DeviceIndex" : "0",
+                    "DeleteOnTermination" : "true",
+                    "SubnetId" : { "Ref" : "PrivateSubnet1" }
+                }],
+                "EbsOptimized" : "true",
+                "IamInstanceProfile" : { "Ref": "MediaServerRoleProfile" },
+                "UserData": {
+                    "Fn::Base64": {
+                        "Fn::Join": [
+                            "\n",[
+                                "#!/bin/bash",
+                                "exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1",
+                                "wget \"http://plex.tv/downloads\" -O - | grep -o \"http.*amd64\\.deb\" | grep -v ros6-binaries | wget -i - -O /home/ubuntu/plex_update.deb",
+                                "apt-get install avahi-daemon -y",
+                                "apt-get install avahi-utils -y",
+                                "dpkg -i /home/ubuntu/plex_update.deb",
+                                "apt-get -f install -y",
+                                "sed -i 's/\\/>/ disableRemoteSecurity=\"1\" AcceptedEULA=\"1\" FirstRun=\"0\"\\/>/g' /var/lib/plexmediaserver/Library/Application\\ Support/Plex\\ Media\\ Server/Preferences.xml",
+                                "pkill -9 [pP]lex",
+                                "service plexmediaserver start",
+                                "apt-get update",
+                                "apt-get install python-pip -y",
+                                "pip install boto",
+                                "pip install awscli",
+                                "mkfs -t ext4 /dev/xvdh",
+                                "mount /dev/xvdh /media",
+                                {"Fn::Join": [" ", ["command=\"", "aws", "s3", "sync", {"Fn::Join": ["", ["s3://", {"Ref": "MediaServerS3Path"}]]}, "/media", "--recursive", "\"" ]]},
+                                "job=\"* * * * * $command >> /var/log/media_sync_log\"",
+                                "echo \"$job\" > /etc/cron.d/media_sync", 
+                                "exit 0"
+                            ]
+                        ]
+                    }
+                }
+            }
+        },
+        "MediaServer2" : {
+            "Type" : "AWS::EC2::Instance",
+            "Properties" : {
+                "InstanceType" : { "Ref" : "EC2InstanceType" },
+                "KeyName" : { "Ref" : "KeyName" },
+                "ImageId": { "Fn::FindInMap" : [ "MediaInstanceMap", { "Ref" : "AWS::Region" }, "64"]},
+                "Tags" : [
+                    { "Key" : "Name", "Value" : "Media2" }
+                ],
+                "NetworkInterfaces" : [{
+                    "GroupSet" : [{ "Ref" : "PrivateSecurityGroup" }, { "Ref" :  "VPNAddressesSecurityGroup"}],
+                    "AssociatePublicIpAddress" : "false",
+                    "DeviceIndex" : "0",
+                    "DeleteOnTermination" : "true",
+                    "SubnetId" : { "Ref" : "PrivateSubnet2" }
+                }],
+                "EbsOptimized" : "true",
+                "IamInstanceProfile" : { "Ref": "MediaServerRoleProfile" },
+                "UserData": {
+                    "Fn::Base64": {
+                        "Fn::Join": [
+                            "\n",[
+                                "#!/bin/bash",
+                                "exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1",
+                                "wget \"http://plex.tv/downloads\" -O - | grep -o \"http.*amd64\\.deb\" | grep -v ros6-binaries | wget -i - -O /home/ubuntu/plex_update.deb",
+                                "apt-get install avahi-daemon -y",
+                                "apt-get install avahi-utils -y",
+                                "dpkg -i /home/ubuntu/plex_update.deb",
+                                "apt-get -f install -y",
+                                "sed -i 's/\\/>/ disableRemoteSecurity=\"1\" AcceptedEULA=\"1\" FirstRun=\"0\"\\/>/g' /var/lib/plexmediaserver/Library/Application\\ Support/Plex\\ Media\\ Server/Preferences.xml",
+                                "pkill -9 [pP]lex",
+                                "service plexmediaserver start",
+                                "apt-get update",
+                                "apt-get install python-pip -y",
+                                "pip install boto",
+                                "pip install awscli",
+                                "mkfs -t ext4 /dev/xvdh",
+                                "mount /dev/xvdh /media",
+                                {"Fn::Join": [" ", ["command=\"", "aws", "s3", "sync", {"Fn::Join": ["", ["s3://", {"Ref": "MediaServerS3Path"}]]}, "/media", "--recursive", "\"" ]]},
+                                "job=\"* * * * * $command >> /var/log/media_sync_log\"",
+                                "echo \"$job\" > /etc/cron.d/media_sync", 
+                                "exit 0"
+                            ]
+                        ]
+                    }
+                }
+            }
+        },
+        "MediaServer3" : {
+            "Type" : "AWS::EC2::Instance",
+            "Properties" : {
+                "InstanceType" : { "Ref" : "EC2InstanceType" },
+                "KeyName" : { "Ref" : "KeyName" },
+                "ImageId": { "Fn::FindInMap" : [ "MediaInstanceMap", { "Ref" : "AWS::Region" }, "64"]},
+                "Tags" : [
+                    { "Key" : "Name", "Value" : "Media3" }
+                ],
+                "NetworkInterfaces" : [{
+                    "GroupSet" : [{ "Ref" : "PrivateSecurityGroup" }, { "Ref" :  "VPNAddressesSecurityGroup"}],
+                    "AssociatePublicIpAddress" : "false",
+                    "DeviceIndex" : "0",
+                    "DeleteOnTermination" : "true",
+                    "SubnetId" : { "Ref" : "PrivateSubnet3" }
+                }],
+                "EbsOptimized" : "true",
+                "IamInstanceProfile" : { "Ref": "MediaServerRoleProfile" },
+                "UserData": {
+                    "Fn::Base64": {
+                        "Fn::Join": [
+                            "\n",[
+                                "#!/bin/bash",
+                                "exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1",
+                                "wget \"http://plex.tv/downloads\" -O - | grep -o \"http.*amd64\\.deb\" | grep -v ros6-binaries | wget -i - -O /home/ubuntu/plex_update.deb",
+                                "apt-get install avahi-daemon -y",
+                                "apt-get install avahi-utils -y",
+                                "dpkg -i /home/ubuntu/plex_update.deb",
+                                "apt-get -f install -y",
+                                "sed -i 's/\\/>/ disableRemoteSecurity=\"1\" AcceptedEULA=\"1\" FirstRun=\"0\"\\/>/g' /var/lib/plexmediaserver/Library/Application\\ Support/Plex\\ Media\\ Server/Preferences.xml",
+                                "pkill -9 [pP]lex",
+                                "service plexmediaserver start",
+                                "apt-get update",
+                                "apt-get install python-pip -y",
+                                "pip install boto",
+                                "pip install awscli",
+                                "mkfs -t ext4 /dev/xvdh",
+                                "mount /dev/xvdh /media",
+                                {"Fn::Join": [" ", ["command=\"", "aws", "s3", "sync", {"Fn::Join": ["", ["s3://", {"Ref": "MediaServerS3Path"}]]}, "/media", "--recursive", "\"" ]]},
+                                "job=\"* * * * * $command >> /var/log/media_sync_log\"",
+                                "echo \"$job\" > /etc/cron.d/media_sync", 
+                                "exit 0"
+                            ]
+                        ]
+                    }
+                }
+            }
+        },
+        "MediaVolume1" : {
+            "Type" : "AWS::EC2::Volume",
+            "Properties" : {
+                "Size" : "1024",
+                "VolumeType" : "io1",
+                "Iops" : "3000",
+                "AvailabilityZone" : { "Fn::GetAtt" : [ "MediaServer1", "AvailabilityZone" ] }
+            },
+            "DependsOn" : "MediaServer1"
+        },
+        "MediaMount1" : {
+            "Type" : "AWS::EC2::VolumeAttachment",
+            "Properties" : {
+                "InstanceId" : { "Ref" : "MediaServer1" },
+                "VolumeId"  : { "Ref" : "MediaVolume1" },
+                "Device" : "/dev/xvdh"
+            },
+            "DependsOn" : "MediaVolume1"
+        },
+        "MediaVolume2" : {
+            "Type" : "AWS::EC2::Volume",
+            "Properties" : {
+                "Size" : "1024",
+                "VolumeType" : "io1",
+                "Iops" : "3000",
+                "AvailabilityZone" : { "Fn::GetAtt" : [ "MediaServer2", "AvailabilityZone" ] }
+            },
+            "DependsOn" : "MediaServer2"
+        },
+        "MediaMount2" : {
+            "Type" : "AWS::EC2::VolumeAttachment",
+            "Properties" : {
+                "InstanceId" : { "Ref" : "MediaServer2" },
+                "VolumeId"  : { "Ref" : "MediaVolume2" },
+                "Device" : "/dev/xvdh"
+            },
+            "DependsOn" : "MediaVolume2"
+        },
+        "MediaVolume3" : {
+            "Type" : "AWS::EC2::Volume",
+            "Properties" : {
+                "Size" : "1024",
+                "VolumeType" : "io1",
+                "Iops" : "3000",
+                "AvailabilityZone" : { "Fn::GetAtt" : [ "MediaServer3", "AvailabilityZone" ] }
+            },
+            "DependsOn" : "MediaServer3"
+        },
+        "MediaMount3" : {
+            "Type" : "AWS::EC2::VolumeAttachment",
+            "Properties" : {
+                "InstanceId" : { "Ref" : "MediaServer3" },
+                "VolumeId"  : { "Ref" : "MediaVolume3" },
+                "Device" : "/dev/xvdh"
+            },
+            "DependsOn" : "MediaVolume3"
+        },      
+        "NATSecurityGroup" : {
+            "Type" : "AWS::EC2::SecurityGroup",
+            "Properties" : {
+                "GroupDescription" : "Enable access to the NAT host",
+                "VpcId" : { "Ref" : "VPC" },
+                "SecurityGroupIngress" : [  
+                    {"IpProtocol" : "tcp", "FromPort" : "80",  "ToPort" : "80",  "CidrIp" : { "Fn::FindInMap" : [ "CidrMap", "PrivateSubnet1", "cidr" ]}},
+                    {"IpProtocol" : "tcp", "FromPort" : "80",  "ToPort" : "80",  "CidrIp" : { "Fn::FindInMap" : [ "CidrMap", "PrivateSubnet2", "cidr" ]}},
+                    {"IpProtocol" : "tcp", "FromPort" : "80",  "ToPort" : "80",  "CidrIp" : { "Fn::FindInMap" : [ "CidrMap", "PrivateSubnet3", "cidr" ]}},
+                    {"IpProtocol" : "tcp", "FromPort" : "443",  "ToPort" : "443",  "CidrIp" : { "Fn::FindInMap" : [ "CidrMap", "PrivateSubnet1", "cidr" ]}},
+                    {"IpProtocol" : "tcp", "FromPort" : "443",  "ToPort" : "443",  "CidrIp" : { "Fn::FindInMap" : [ "CidrMap", "PrivateSubnet2", "cidr" ]}},
+                    {"IpProtocol" : "tcp", "FromPort" : "443",  "ToPort" : "443",  "CidrIp" : { "Fn::FindInMap" : [ "CidrMap", "PrivateSubnet3", "cidr" ]}},
+                    {"IpProtocol" : "-1", "FromPort" : "-1",  "ToPort" : "-1",  "SourceSecurityGroupId" : { "Ref" : "PrivateSecurityGroup" }},
+                    {"IpProtocol" : "-1", "FromPort" : "-1",  "ToPort" : "-1",  "SourceSecurityGroupId" : { "Ref" : "VPNAddressesSecurityGroup" }}
+                ]
+            }
+        },
+        "VPNServerSecurityGroup" : {
+            "Type" : "AWS::EC2::SecurityGroup",
+            "Properties" : {
+                "GroupDescription" : "Enable access to the VPN host",
+                "VpcId" : { "Ref" : "VPC" },
+                "SecurityGroupIngress" : [
+                    {"IpProtocol" : "udp", "FromPort" : "1194",  "ToPort" : "1194",  "CidrIp" : "0.0.0.0/0"}
+                ]
+            }
+        },
+        "PublicSecurityGroup" : {
+            "Type" : "AWS::EC2::SecurityGroup",
+            "Properties" : {
+                "GroupDescription" : "Enable access to the public host(s)",
+                "VpcId" : { "Ref" : "VPC" },
+                "SecurityGroupIngress" : [                
+                ]
+            }
+        },
+        "PrivateSecurityGroup" : {
+            "Type" : "AWS::EC2::SecurityGroup",
+            "Properties" : {
+                "GroupDescription" : "Enable access to the private host(s)",
+                "VpcId" : { "Ref" : "VPC" },
+                "SecurityGroupIngress" : [
+                    {"IpProtocol" : "-1", "FromPort" : "-1",  "ToPort" : "-1",  "SourceSecurityGroupId" : { "Ref" : "PublicSecurityGroup" }}
+                ]
+            }
+        },
+        "VPNAddressesSecurityGroup" : {
+            "Type" : "AWS::EC2::SecurityGroup",
+            "Properties" : {
+                "GroupDescription" : "Enable access from VPN",
+                "VpcId" : { "Ref" : "VPC" },
+                "SecurityGroupIngress" : [
+                    {"IpProtocol" : "-1", "FromPort" : "-1",  "ToPort" : "-1",  "CidrIp" : "172.17.0.0/16"}
+                ]
+            }
+        },
+        "NATEip1": {
+            "Type": "AWS::EC2::EIP",
+            "Properties": {
+                "Domain": "vpc",
+                "InstanceId": {"Ref": "NATInstance1"}
+            }
+        },
+        "VPNEip1": {
+            "Type": "AWS::EC2::EIP",
+            "Properties": {
+                "Domain": "vpc",
+                "InstanceId": {"Ref": "VPNServer1"}
+            }
+        },
+        "VPNDNS" : {
+            "Type" : "AWS::Route53::RecordSet",
+            "Properties" : {
+                "HostedZoneName" : {
+                    "Fn::Join" : [ "", [{ "Ref" : "HostedZoneName" }, "."]]
+                },
+                "Comment" : "DNS name for VPN servers.",
+                "Name" : {
+                    "Fn::Join" : [ "", ["vpn.", { "Ref": "AWS::StackName" }, ".", { "Ref" : "HostedZoneName" }] ]
+                },
+                "Type" : "A",
+                "TTL" : "900",
+                "ResourceRecords" : [
+                    { "Ref" : "VPNEip1" }
+                ]
+            }
+        },
+        "VPNInternalDNS" : {
+            "Type" : "AWS::Route53::RecordSet",
+            "Properties" : {
+                "HostedZoneName" : {
+                    "Fn::Join" : [ "", [{ "Ref" : "HostedZoneName" }, "."]]
+                },
+                "Comment" : "DNS name for VPN server 1 internal.",
+                "Name" : {
+                    "Fn::Join" : [ "", ["vpn.internal.", { "Ref": "AWS::StackName" }, ".", { "Ref" : "HostedZoneName" }] ]
+                },
+                "Type" : "A",
+                "TTL" : "900",
+                "ResourceRecords" : [
+                    { "Fn::GetAtt" : [ "VPNServer1" , "PrivateIp" ] }
+                ]
+            }
+        },
+        "NATDNS" : {
+            "Type" : "AWS::Route53::RecordSet",
+            "Properties" : {
+                "HostedZoneName" : {
+                    "Fn::Join" : [ "", [{ "Ref" : "HostedZoneName" }, "."]]
+                },
+                "Comment" : "DNS name for NAT instance.",
+                "Name" : {
+                    "Fn::Join" : [ "", ["nat.internal.", { "Ref": "AWS::StackName" }, ".", { "Ref" : "HostedZoneName" }] ]
+                },
+                "Type" : "A",
+                "TTL" : "900",
+                "ResourceRecords" : [
+                    { "Fn::GetAtt" : [ "NATInstance1" , "PrivateIp" ] }
+                ]
+            }
+        },
+        "MediaDNSPrimary" : {
+            "Type" : "AWS::Route53::RecordSet",
+            "Properties" : {
+                "HostedZoneName" : {
+                    "Fn::Join" : [ "", [{ "Ref" : "HostedZoneName" }, "."]]
+                },
+                "Comment" : "DNS name for primary media instance.",
+                "Name" : {
+                    "Fn::Join" : [ "", ["media.internal.", { "Ref": "AWS::StackName" }, ".", { "Ref" : "HostedZoneName" }] ]
+                },
+                "Type" : "A",
+                "TTL" : "900",
+                "ResourceRecords" : [
+                    { "Fn::GetAtt" : [ "MediaServer1" , "PrivateIp" ] }
+                ],
+                "Failover" : "PRIMARY",
+                "HealthCheckId" : { "Ref" : "MediaDNSHealthCheck" },
+                "SetIdentifier" : "media_primary" 
+            }
+        },
+        "MediaDNSSecondary" : {
+            "Type" : "AWS::Route53::RecordSet",
+            "Properties" : {
+                "HostedZoneName" : {
+                    "Fn::Join" : [ "", [{ "Ref" : "HostedZoneName" }, "."]]
+                },
+                "Comment" : "DNS name for secondary media instances.",
+                "Name" : {
+                    "Fn::Join" : [ "", ["media.internal.", { "Ref": "AWS::StackName" }, ".", { "Ref" : "HostedZoneName" }] ]
+                },
+                "Type" : "A",
+                "TTL" : "900",
+                "ResourceRecords" : [
+                    { "Fn::GetAtt" : [ "MediaServer2" , "PrivateIp" ] },
+                    { "Fn::GetAtt" : [ "MediaServer3" , "PrivateIp" ] }
+                ],
+                "Failover" : "SECONDARY",
+                "SetIdentifier" : "media_secondary"
+            }
+        },
+        "MediaDNSHealthCheck" : {
+            "Type" : "AWS::Route53::HealthCheck",
+            "Properties" : {
+                "HealthCheckConfig" : {
+                    "FailureThreshold" : 1,
+                    "FullyQualifiedDomainName" : {"Fn::Join" : [ "", ["media.internal.", { "Ref": "AWS::StackName" }, ".", { "Ref" : "HostedZoneName" }] ]},
+                    "Port" : 32400,
+                    "RequestInterval" : 10,
+                    "ResourcePath" : "/web/index.html",
+                    "SearchString" : "Plex",
+                    "Type" : "HTTP_STR_MATCH"
+                }
+            }
+        }
+    },
+    "Outputs" : {
+        "VPCId" : {
+            "Description" : "VPCId of the newly created VPC",
+            "Value" :  { "Ref" : "VPC" }
+        },
+        "NAT1IP": {
+            "Value": {"Ref": "NATEip1"}
+        },
+        "VPN1IP" : {
+            "Value": {"Ref": "VPNEip1"}
+        },
+        "VPNDNS" : {
+            "Value": {"Ref": "VPNDNS"}
+        },
+        "MediaDNS" : {
+            "Value": {"Ref": "MediaDNSPrimary"}
+        }
+    }
+}
