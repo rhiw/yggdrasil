@@ -366,7 +366,7 @@
                         "Fn::Join": [
                             "\n",[
                                 "#!/bin/bash",
-                                "cd /home/ec2-user", 
+                                "cd /home/ubuntu", 
                                 "curl -L https://github.com/rhiw/yggdrasil/archive/master.tar.gz | tar xz",
                                 {"Fn::Join": [" ", ["./yggdrasil-master/scripts/bash/media.sh", 
                                                     {"Ref": "MediaServerS3Path"}, 
@@ -401,7 +401,7 @@
                         "Fn::Join": [
                             "\n",[
                                 "#!/bin/bash",
-                                "cd /home/ec2-user", 
+                                "cd /home/ubuntu", 
                                 "curl -L https://github.com/rhiw/yggdrasil/archive/master.tar.gz | tar xz",
                                 {"Fn::Join": [" ", ["./yggdrasil-master/scripts/bash/media.sh", 
                                                     {"Ref": "MediaServerS3Path"}, 
@@ -436,7 +436,7 @@
                         "Fn::Join": [
                             "\n",[
                                 "#!/bin/bash",
-                                "cd /home/ec2-user", 
+                                "cd /home/ubuntu", 
                                 "curl -L https://github.com/rhiw/yggdrasil/archive/master.tar.gz | tar xz",
                                 {"Fn::Join": [" ", ["./yggdrasil-master/scripts/bash/media.sh", 
                                                     {"Ref": "MediaServerS3Path"}, 
