@@ -280,6 +280,7 @@
                     "Fn::Base64": {
                         "Fn::Join": [
                             "\n",[
+                                "#!/bin/bash",
                                 "cd /home/ec2-user", 
                                 "curl -L https://github.com/rhiw/yggdrasil/archive/master.tar.gz | tar xz",
                                 {"Fn::Join": [" ", ["./yggdrasil-master/scripts/bash/nat.sh", 
@@ -321,6 +322,7 @@
                     "Fn::Base64": {
                         "Fn::Join": [
                             "\n",[
+                                "#!/bin/bash",
                                 "cd /home/ec2-user", 
                                 "curl -L https://github.com/rhiw/yggdrasil/archive/master.tar.gz | tar xz",
                                 {"Fn::Join": [" ", ["./yggdrasil-master/scripts/bash/vpn.sh", 
@@ -363,6 +365,7 @@
                     "Fn::Base64": {
                         "Fn::Join": [
                             "\n",[
+                                "#!/bin/bash",
                                 "cd /home/ec2-user", 
                                 "curl -L https://github.com/rhiw/yggdrasil/archive/master.tar.gz | tar xz",
                                 {"Fn::Join": [" ", ["./yggdrasil-master/scripts/bash/media.sh", 
@@ -397,6 +400,7 @@
                     "Fn::Base64": {
                         "Fn::Join": [
                             "\n",[
+                                "#!/bin/bash",
                                 "cd /home/ec2-user", 
                                 "curl -L https://github.com/rhiw/yggdrasil/archive/master.tar.gz | tar xz",
                                 {"Fn::Join": [" ", ["./yggdrasil-master/scripts/bash/media.sh", 
@@ -431,6 +435,7 @@
                     "Fn::Base64": {
                         "Fn::Join": [
                             "\n",[
+                                "#!/bin/bash",
                                 "cd /home/ec2-user", 
                                 "curl -L https://github.com/rhiw/yggdrasil/archive/master.tar.gz | tar xz",
                                 {"Fn::Join": [" ", ["./yggdrasil-master/scripts/bash/media.sh", 

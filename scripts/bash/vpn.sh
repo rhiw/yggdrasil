@@ -23,13 +23,16 @@ sudo cp -r EasyRSA-2.2.2/* /etc/openvpn/easy-rsa/
 
 cd /etc/openvpn/easy-rsa
 CERTS_CMD="aws s3 cp s3://"
-CERTS_CMD+=VPN_SERVER_CERTS_S3_PREFIX
+CERTS_CMD+=$VPN_SERVER_CERTS_S3_PREFIX
 CERTS_CMD+=" /etc/openvpn/easy-rsa/keys --recursive"
+eval $CERTS_CMD
 
 CONFIG_CMD="aws s3 cp s3://"
-CERTS_CMD+=VPN_SERVER_CONFIG_S3_PATH
-CERTS_CMD+=" /etc/openvpn/"
+CONFIG_CMD+=$VPN_SERVER_CONFIG_S3_PATH
+CONFIG_CMD+=" /etc/openvpn/"
+eval $CONFIG_CMD
 
 service openvpn start
 exit 0
+
 
