@@ -1,4 +1,4 @@
-#!/bin/bash"
+#!/bin/bash
 
 set -x
 ETH0_MAC=`/sbin/ifconfig  | /bin/grep eth0 | awk '{print tolower($5)}' | grep '^[0-9a-f]\\{2\\}\\(:[0-9a-f]\\{2\\}\\)\\{5\\}$'`
