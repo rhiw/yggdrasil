@@ -282,7 +282,10 @@
                             "\n",[
                                 "#!/bin/bash",
                                 "cd /home/ec2-user", 
-                                "curl -L https://github.com/rhiw/yggdrasil/archive/master.tar.gz | tar xz",
+                                "until curl -L https://github.com/rhiw/yggdrasil/archive/master.tar.gz | tar xz; do",
+                                "    echo "Can't reach github yet, retrying in 10s",
+                                "    sleep 10",
+                                "done"
                                 {"Fn::Join": [" ", ["./yggdrasil-master/scripts/bash/nat.sh", 
                                                     ">",
                                                     "/var/log/nat_setup.log"]]} 

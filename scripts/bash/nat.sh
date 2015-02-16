@@ -6,7 +6,7 @@ VPC_CIDR_URI=i\"http://169.254.169.254/latest/meta-data/network/interfaces/macs/
 VPC_CIDR_RANGE=`curl --retry 3 --retry-delay 0 --silent --fail ${VPC_CIDR_URI}`
 
 if [ $? -ne 0 ] ; then
-   VPC_CIDR_RANGE=\"0.0.0.0/0\"
+   VPC_CIDR_RANGE=0.0.0.0
 fi
 
 #TODO: Find better way to flip ip_forward bit (sysctl?)
