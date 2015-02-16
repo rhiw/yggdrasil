@@ -32,7 +32,7 @@
         },
         "HostedZoneName" : {
             "Type": "String",
-            "Description": "The name of the hosted zone you want to use for DNS",
+            "Description": "The name of the hosted zone you want to use for DNS"
         },
         "VpnCertsS3Prefix": {
             "Type": "String",
@@ -260,7 +260,7 @@
         },
         "NATInstance1" : {
             "Type" : "AWS::EC2::Instance",
-            "DependsOn" : "GatewayToInternet",
+            "DependsOn" : "AttachIGW",
             "Properties" : {
                 "InstanceType" : { "Ref" : "EC2InstanceType" },
                 "KeyName" : { "Ref" : "KeyName" },
@@ -299,7 +299,7 @@
         },
         "VPNServer1" : {
             "Type" : "AWS::EC2::Instance",
-            "DependsOn" : "GatewayToInternet",
+            "DependsOn" : "AttachIGW",
             "Properties" : {
                 "InstanceType" : { "Ref" : "EC2InstanceType" },
                 "KeyName" : { "Ref" : "KeyName" },
@@ -323,7 +323,7 @@
                                 "curl -L https://github.com/rhiw/yggdrasil/archive/master.tar.gz | tar xz",
                                 {"Fn::Join": [" ", ["./yggdrasil-master/scripts/bash/vpn.sh", 
                                                     {"Ref": "VpnCertsS3Prefix"}, 
-                                                    {"Ref": "VpnServerConfigS3Prefix"},
+                                                    {"Ref": "VpnServerConfigS3Path"},
                                                     ">",
                                                     "/var/log/vpn_setup.log"]]} 
                             ]
