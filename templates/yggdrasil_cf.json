@@ -280,16 +280,10 @@
                     "Fn::Base64": {
                         "Fn::Join": [
                             "\n",[
-                                "#!/bin/bash",
-                                "set -x",
-                                "ETH0_MAC=`/sbin/ifconfig  | /bin/grep eth0 | awk '{print tolower($5)}' | grep '^[0-9a-f]\\{2\\}\\(:[0-9a-f]\\{2\\}\\)\\{5\\}$'`",
-                                "VPC_CIDR_URI=i\"http://169.254.169.254/latest/meta-data/network/interfaces/macs/${ETH0_MAC}/vpc-ipv4-cidr-block\"",
-                                "VPC_CIDR_RANGE=`curl --retry 3 --retry-delay 0 --silent --fail ${VPC_CIDR_URI}`",
-                                "if [ $? -ne 0 ] ; then",
-                                "   VPC_CIDR_RANGE=\"0.0.0.0/0\"",
-                                "fi",
-                                "echo 1 > /proc/sys/net/ipv4/ip_forward && echo 0 > /proc/sys/net/ipv4/conf/eth0/send_redirects && /sbin/iptables -t nat -A POSTROUTING -o eth0 -s ${VPC_CIDR_RANGE} -j MASQUERADE",
-                                "exit 0"
+                                "curl -L https://github.com/rhiw/yggdrasil/archive/master.tar.gz | tar xz",
+                                {"Fn::Join": [" ", ["./yggdrasil-master/scripts/bash/nat.sh", 
+                                                    ">",
+                                                    "/var/log/nat_setup.log"]]} 
                             ]
                         ]
                     }
@@ -326,25 +320,12 @@
                     "Fn::Base64": {
                         "Fn::Join": [
                             "\n",[
-                                "#!/bin/bash",
-                                "set -x",
-                                "ETH0_MAC=`/sbin/ifconfig  | /bin/grep eth0 | awk '{print tolower($5)}' | grep '^[0-9a-f]\\{2\\}\\(:[0-9a-f]\\{2\\}\\)\\{5\\}$'`",
-                                "VPC_CIDR_URI=i\"http://169.254.169.254/latest/meta-data/network/interfaces/macs/${ETH0_MAC}/vpc-ipv4-cidr-block\"",
-                                "VPC_CIDR_RANGE=`curl --retry 3 --retry-delay 0 --silent --fail ${VPC_CIDR_URI}`",
-                                "if [ $? -ne 0 ] ; then",
-                                "   VPC_CIDR_RANGE=\"0.0.0.0/0\"",
-                                "fi",
-                                "echo 1 > /proc/sys/net/ipv4/ip_forward && echo 0 > /proc/sys/net/ipv4/conf/eth0/send_redirects && /sbin/iptables -t nat -A POSTROUTING -o eth0 -s ${VPC_CIDR_RANGE} -j MASQUERADE",
-                                "mkdir /etc/openvpn/easy-rsa",
-                                "mkdir /etc/openvpn/easy-rsa/keys",
-                                "wget https://github.com/OpenVPN/easy-rsa/releases/download/2.2.2/EasyRSA-2.2.2.tgz",
-                                "tar -xvf EasyRSA-2.2.2.tgz",
-                                "sudo cp -r EasyRSA-2.2.2/* /etc/openvpn/easy-rsa/",
-                                "cd /etc/openvpn/easy-rsa",
-                                {"Fn::Join": [" ", ["aws", "s3", "cp", {"Fn::Join": ["", ["s3://", {"Ref": "VpnCertsS3Prefix"}]]}, "/etc/openvpn/easy-rsa/keys", "--recursive" ]]},
-                                {"Fn::Join": [" ", ["aws", "s3", "cp", {"Fn::Join": ["", ["s3://", {"Ref": "VpnServerConfigS3Path"}]]}, "/etc/openvpn/" ]]},
-                                "service openvpn start",
-                                "exit 0"
+                                "curl -L https://github.com/rhiw/yggdrasil/archive/master.tar.gz | tar xz",
+                                {"Fn::Join": [" ", ["./yggdrasil-master/scripts/bash/vpn.sh", 
+                                                    {"Ref": "VpnCertsS3Prefix"}, 
+                                                    {"Ref": "VpnServerConfigS3Prefix"},
+                                                    ">",
+                                                    "/var/log/vpn_setup.log"]]} 
                             ]
                         ]
                     }
@@ -380,26 +361,11 @@
                     "Fn::Base64": {
                         "Fn::Join": [
                             "\n",[
-                                "#!/bin/bash",
-                                "exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1",
-                                "wget \"http://plex.tv/downloads\" -O - | grep -o \"http.*amd64\\.deb\" | grep -v ros6-binaries | wget -i - -O /home/ubuntu/plex_update.deb",
-                                "apt-get install avahi-daemon -y",
-                                "apt-get install avahi-utils -y",
-                                "dpkg -i /home/ubuntu/plex_update.deb",
-                                "apt-get -f install -y",
-                                "sed -i 's/\\/>/ disableRemoteSecurity=\"1\" AcceptedEULA=\"1\" FirstRun=\"0\"\\/>/g' /var/lib/plexmediaserver/Library/Application\\ Support/Plex\\ Media\\ Server/Preferences.xml",
-                                "pkill -9 [pP]lex",
-                                "service plexmediaserver start",
-                                "apt-get update",
-                                "apt-get install python-pip -y",
-                                "pip install boto",
-                                "pip install awscli",
-                                "mkfs -t ext4 /dev/xvdh",
-                                "mount /dev/xvdh /media",
-                                {"Fn::Join": [" ", ["command=\"", "aws", "s3", "sync", {"Fn::Join": ["", ["s3://", {"Ref": "MediaServerS3Path"}]]}, "/media", "--recursive", "\"" ]]},
-                                "job=\"* * * * * $command >> /var/log/media_sync_log\"",
-                                "echo \"$job\" > /etc/cron.d/media_sync", 
-                                "exit 0"
+                                "curl -L https://github.com/rhiw/yggdrasil/archive/master.tar.gz | tar xz",
+                                {"Fn::Join": [" ", ["./yggdrasil-master/scripts/bash/media.sh", 
+                                                    {"Ref": "MediaServerS3Path"}, 
+                                                    ">",
+                                                    "/var/log/media_setup.log"]]} 
                             ]
                         ]
                     }
@@ -428,26 +394,11 @@
                     "Fn::Base64": {
                         "Fn::Join": [
                             "\n",[
-                                "#!/bin/bash",
-                                "exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1",
-                                "wget \"http://plex.tv/downloads\" -O - | grep -o \"http.*amd64\\.deb\" | grep -v ros6-binaries | wget -i - -O /home/ubuntu/plex_update.deb",
-                                "apt-get install avahi-daemon -y",
-                                "apt-get install avahi-utils -y",
-                                "dpkg -i /home/ubuntu/plex_update.deb",
-                                "apt-get -f install -y",
-                                "sed -i 's/\\/>/ disableRemoteSecurity=\"1\" AcceptedEULA=\"1\" FirstRun=\"0\"\\/>/g' /var/lib/plexmediaserver/Library/Application\\ Support/Plex\\ Media\\ Server/Preferences.xml",
-                                "pkill -9 [pP]lex",
-                                "service plexmediaserver start",
-                                "apt-get update",
-                                "apt-get install python-pip -y",
-                                "pip install boto",
-                                "pip install awscli",
-                                "mkfs -t ext4 /dev/xvdh",
-                                "mount /dev/xvdh /media",
-                                {"Fn::Join": [" ", ["command=\"", "aws", "s3", "sync", {"Fn::Join": ["", ["s3://", {"Ref": "MediaServerS3Path"}]]}, "/media", "--recursive", "\"" ]]},
-                                "job=\"* * * * * $command >> /var/log/media_sync_log\"",
-                                "echo \"$job\" > /etc/cron.d/media_sync", 
-                                "exit 0"
+                                "curl -L https://github.com/rhiw/yggdrasil/archive/master.tar.gz | tar xz",
+                                {"Fn::Join": [" ", ["./yggdrasil-master/scripts/bash/media.sh", 
+                                                    {"Ref": "MediaServerS3Path"}, 
+                                                    ">",
+                                                    "/var/log/media_setup.log"]]} 
                             ]
                         ]
                     }
@@ -476,26 +427,11 @@
                     "Fn::Base64": {
                         "Fn::Join": [
                             "\n",[
-                                "#!/bin/bash",
-                                "exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1",
-                                "wget \"http://plex.tv/downloads\" -O - | grep -o \"http.*amd64\\.deb\" | grep -v ros6-binaries | wget -i - -O /home/ubuntu/plex_update.deb",
-                                "apt-get install avahi-daemon -y",
-                                "apt-get install avahi-utils -y",
-                                "dpkg -i /home/ubuntu/plex_update.deb",
-                                "apt-get -f install -y",
-                                "sed -i 's/\\/>/ disableRemoteSecurity=\"1\" AcceptedEULA=\"1\" FirstRun=\"0\"\\/>/g' /var/lib/plexmediaserver/Library/Application\\ Support/Plex\\ Media\\ Server/Preferences.xml",
-                                "pkill -9 [pP]lex",
-                                "service plexmediaserver start",
-                                "apt-get update",
-                                "apt-get install python-pip -y",
-                                "pip install boto",
-                                "pip install awscli",
-                                "mkfs -t ext4 /dev/xvdh",
-                                "mount /dev/xvdh /media",
-                                {"Fn::Join": [" ", ["command=\"", "aws", "s3", "sync", {"Fn::Join": ["", ["s3://", {"Ref": "MediaServerS3Path"}]]}, "/media", "--recursive", "\"" ]]},
-                                "job=\"* * * * * $command >> /var/log/media_sync_log\"",
-                                "echo \"$job\" > /etc/cron.d/media_sync", 
-                                "exit 0"
+                                "curl -L https://github.com/rhiw/yggdrasil/archive/master.tar.gz | tar xz",
+                                {"Fn::Join": [" ", ["./yggdrasil-master/scripts/bash/media.sh", 
+                                                    {"Ref": "MediaServerS3Path"}, 
+                                                    ">",
+                                                    "/var/log/media_setup.log"]]} 
                             ]
                         ]
                     }
