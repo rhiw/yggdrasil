@@ -387,82 +387,6 @@
                 }
             }
         },
-        "MediaServer2" : {
-            "Type" : "AWS::EC2::Instance",
-            "Properties" : {
-                "InstanceType" : { "Ref" : "EC2InstanceType" },
-                "KeyName" : { "Ref" : "KeyName" },
-                "ImageId": { "Fn::FindInMap" : [ "MediaInstanceMap", { "Ref" : "AWS::Region" }, "64"]},
-                "Tags" : [
-                    { "Key" : "Name", "Value" : "Media2" }
-                ],
-                "NetworkInterfaces" : [{
-                    "GroupSet" : [{ "Ref" : "PrivateSecurityGroup" }, { "Ref" :  "VPNAddressesSecurityGroup"}],
-                    "AssociatePublicIpAddress" : "false",
-                    "DeviceIndex" : "0",
-                    "DeleteOnTermination" : "true",
-                    "SubnetId" : { "Ref" : "PrivateSubnet2" }
-                }],
-                "EbsOptimized" : "true",
-                "IamInstanceProfile" : { "Ref": "MediaServerRoleProfile" },
-                "UserData": {
-                    "Fn::Base64": {
-                        "Fn::Join": [
-                            "\n",[
-                                "#!/bin/bash",
-                                "cd /home/ubuntu", 
-                                "until curl -L https://github.com/rhiw/yggdrasil/archive/master.tar.gz | tar xz; do",
-                                "    echo 'Cannot reach github yet, retrying in 1s'",
-                                "    sleep 1",
-                                "done",
-                                {"Fn::Join": [" ", ["./yggdrasil-master/scripts/bash/media.sh", 
-                                                    {"Ref": "MediaServerS3Path"}, 
-                                                    ">",
-                                                    "/var/log/media_setup.log"]]} 
-                            ]
-                        ]
-                    }
-                }
-            }
-        },
-        "MediaServer3" : {
-            "Type" : "AWS::EC2::Instance",
-            "Properties" : {
-                "InstanceType" : { "Ref" : "EC2InstanceType" },
-                "KeyName" : { "Ref" : "KeyName" },
-                "ImageId": { "Fn::FindInMap" : [ "MediaInstanceMap", { "Ref" : "AWS::Region" }, "64"]},
-                "Tags" : [
-                    { "Key" : "Name", "Value" : "Media3" }
-                ],
-                "NetworkInterfaces" : [{
-                    "GroupSet" : [{ "Ref" : "PrivateSecurityGroup" }, { "Ref" :  "VPNAddressesSecurityGroup"}],
-                    "AssociatePublicIpAddress" : "false",
-                    "DeviceIndex" : "0",
-                    "DeleteOnTermination" : "true",
-                    "SubnetId" : { "Ref" : "PrivateSubnet3" }
-                }],
-                "EbsOptimized" : "true",
-                "IamInstanceProfile" : { "Ref": "MediaServerRoleProfile" },
-                "UserData": {
-                    "Fn::Base64": {
-                        "Fn::Join": [
-                            "\n",[
-                                "#!/bin/bash",
-                                "cd /home/ubuntu", 
-                                "until curl -L https://github.com/rhiw/yggdrasil/archive/master.tar.gz | tar xz; do",
-                                "    echo 'Cannot reach github yet, retrying in 1s'",
-                                "    sleep 1",
-                                "done",
-                                {"Fn::Join": [" ", ["./yggdrasil-master/scripts/bash/media.sh", 
-                                                    {"Ref": "MediaServerS3Path"}, 
-                                                    ">",
-                                                    "/var/log/media_setup.log"]]} 
-                            ]
-                        ]
-                    }
-                }
-            }
-        },
         "MediaVolume1" : {
             "Type" : "AWS::EC2::Volume",
             "Properties" : {
@@ -482,44 +406,6 @@
             },
             "DependsOn" : "MediaVolume1"
         },
-        "MediaVolume2" : {
-            "Type" : "AWS::EC2::Volume",
-            "Properties" : {
-                "Size" : "1024",
-                "VolumeType" : "io1",
-                "Iops" : "3000",
-                "AvailabilityZone" : { "Fn::GetAtt" : [ "MediaServer2", "AvailabilityZone" ] }
-            },
-            "DependsOn" : "MediaServer2"
-        },
-        "MediaMount2" : {
-            "Type" : "AWS::EC2::VolumeAttachment",
-            "Properties" : {
-                "InstanceId" : { "Ref" : "MediaServer2" },
-                "VolumeId"  : { "Ref" : "MediaVolume2" },
-                "Device" : "/dev/xvdh"
-            },
-            "DependsOn" : "MediaVolume2"
-        },
-        "MediaVolume3" : {
-            "Type" : "AWS::EC2::Volume",
-            "Properties" : {
-                "Size" : "1024",
-                "VolumeType" : "io1",
-                "Iops" : "3000",
-                "AvailabilityZone" : { "Fn::GetAtt" : [ "MediaServer3", "AvailabilityZone" ] }
-            },
-            "DependsOn" : "MediaServer3"
-        },
-        "MediaMount3" : {
-            "Type" : "AWS::EC2::VolumeAttachment",
-            "Properties" : {
-                "InstanceId" : { "Ref" : "MediaServer3" },
-                "VolumeId"  : { "Ref" : "MediaVolume3" },
-                "Device" : "/dev/xvdh"
-            },
-            "DependsOn" : "MediaVolume3"
-        },      
         "NATSecurityGroup" : {
             "Type" : "AWS::EC2::SecurityGroup",
             "Properties" : {
@@ -655,44 +541,7 @@
                 "TTL" : "900",
                 "ResourceRecords" : [
                     { "Fn::GetAtt" : [ "MediaServer1" , "PrivateIp" ] }
-                ],
-                "Failover" : "PRIMARY",
-                "HealthCheckId" : { "Ref" : "MediaDNSHealthCheck" },
-                "SetIdentifier" : "media_primary" 
-            }
-        },
-        "MediaDNSSecondary" : {
-            "Type" : "AWS::Route53::RecordSet",
-            "Properties" : {
-                "HostedZoneName" : {
-                    "Fn::Join" : [ "", [{ "Ref" : "HostedZoneName" }, "."]]
-                },
-                "Comment" : "DNS name for secondary media instances.",
-                "Name" : {
-                    "Fn::Join" : [ "", ["media.internal.", { "Ref": "AWS::StackName" }, ".", { "Ref" : "HostedZoneName" }] ]
-                },
-                "Type" : "A",
-                "TTL" : "900",
-                "ResourceRecords" : [
-                    { "Fn::GetAtt" : [ "MediaServer2" , "PrivateIp" ] },
-                    { "Fn::GetAtt" : [ "MediaServer3" , "PrivateIp" ] }
-                ],
-                "Failover" : "SECONDARY",
-                "SetIdentifier" : "media_secondary"
-            }
-        },
-        "MediaDNSHealthCheck" : {
-            "Type" : "AWS::Route53::HealthCheck",
-            "Properties" : {
-                "HealthCheckConfig" : {
-                    "FailureThreshold" : 1,
-                    "FullyQualifiedDomainName" : {"Fn::Join" : [ "", ["media.internal.", { "Ref": "AWS::StackName" }, ".", { "Ref" : "HostedZoneName" }] ]},
-                    "Port" : 32400,
-                    "RequestInterval" : 10,
-                    "ResourcePath" : "/web/index.html",
-                    "SearchString" : "Plex",
-                    "Type" : "HTTP_STR_MATCH"
-                }
+                ]
             }
         }
     },
