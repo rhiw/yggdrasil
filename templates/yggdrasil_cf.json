@@ -285,7 +285,7 @@
                                 "until curl -L https://github.com/rhiw/yggdrasil/archive/master.tar.gz | tar xz; do",
                                 "    echo 'Can't reach github yet, retrying in 10s'",
                                 "    sleep 10",
-                                "done"
+                                "done",
                                 {"Fn::Join": [" ", ["./yggdrasil-master/scripts/bash/nat.sh", 
                                                     ">",
                                                     "/var/log/nat_setup.log"]]} 
