@@ -23,10 +23,12 @@ apt-get install python-pip -y
 pip install boto
 pip install awscli
 
-#mount media volume
-#TODO: Make this do LVM stuff with multiple volumes
-mkfs -t ext4 /dev/xvdh
-mount /dev/xvdh /media
+#Set up LVM
+apt-get install lvm2
+vgcreate media_group /dev/xvdh
+lvcreate --name logical_media -l 100%VG media_group
+mkfs -t ext4 /dev/media_group/logical_media
+mount /dev/media_group/logical_media /media
 
 #set up sync from s3 cron
 #TODO: Make this work correctly. Make it not start if another instance is running
