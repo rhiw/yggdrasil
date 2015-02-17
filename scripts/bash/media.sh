@@ -20,11 +20,12 @@ service plexmediaserver start
 #install awscli
 apt-get update
 apt-get install python-pip -y
-pip install boto
+apt-get install python3-pip -y
+pip3 install boto
 pip install awscli
 
 #Set up LVM
-apt-get install lvm2
+apt-get install lvm2 -y
 vgcreate media_group /dev/xvdh
 lvcreate --name logical_media -l 100%VG media_group
 mkfs -t ext4 /dev/media_group/logical_media
