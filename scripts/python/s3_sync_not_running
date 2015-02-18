@@ -7,6 +7,6 @@ import sys
 for proc in [p for p in os.listdir('/proc') if re.match('\d+', p)]:
     with open(os.path.join('/proc', proc, 'cmdline'), 'r') as fp:
         if 'aws s3 sync' in ' '.join(fp.read().split('\0')):
-            sys.exit(0)
+            sys.exit(int(proc))
 
-sys.exit(1)
+sys.exit(0)
