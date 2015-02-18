@@ -50,15 +50,14 @@ pip install boto
 deactivate
 
 #set up sync from s3 cron
-#TODO: Make this work correctly. Make it not start if another instance is running
-COMMAND="\"aws s3 sync s3://"
+COMMAND='(if /home/ubuntu/yggdrasil-master/scripts/python/s3_sync_not_running ; then echo "running s3 sync" && aws s3 sync s3://'
 COMMAND+=$MEDIA_SERVER_S3_PATH
-COMMAND+=" /media --recursive\""
-JOB="* * * * * $COMMAND >> /var/log/media_sync_log"
+COMMAND+=' /media ; else echo "s3 sync already running" ; fi)'
+JOB="* * * * * root $COMMAND 2>&1 | /usr/bin/logger -t s3_sync"
 
-echo $JOB > /etc/cron.d/media_sync
+cat << EOF > /etc/cron.d/media_sync
+$JOB
 
-#The next line should make it so that a sync doesn't start while another is in progress. I don't think it works; testing needed.
-#cat <(fgrep -i -v \"$command\" <(crontab -l)) <(echo \"$job\") | crontab -
+EOF
 
 exit 0
