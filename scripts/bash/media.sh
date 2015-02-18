@@ -31,6 +31,24 @@ lvcreate --name logical_media -l 100%VG media_group
 mkfs -t ext4 /dev/media_group/logical_media
 mount /dev/media_group/logical_media /media
 
+#Python stuff
+pip install virtualenv
+pip install virtualenvwrapper
+cat << EOF >> /home/ubuntu/.bashrc
+export WORKON_HOME=$HOME/.virtualenvs
+export PROJECT_HOME=$HOME/Devel
+source /usr/local/bin/virtualenvwrapper.sh
+EOF
+mkvirtualenv -p /usr/bin/python2.7 py27
+mkvirtualenv -p /usr/bin/python3.4 py34
+workon py34
+pip install ipython
+pip install boto
+workon py27
+pip install ipython
+pip install boto
+deactivate
+
 #set up sync from s3 cron
 #TODO: Make this work correctly. Make it not start if another instance is running
 COMMAND="\"aws s3 sync s3://"
