@@ -20,8 +20,8 @@ service plexmediaserver start
 #install awscli
 apt-get update
 apt-get install python-pip -y
-apt-get install python3-pip -y
-pip3 install boto
+#apt-get install python3-pip -y
+#pip3 install boto
 pip install awscli
 
 #Set up LVM
@@ -32,22 +32,22 @@ mkfs -t ext4 /dev/media_group/logical_media
 mount /dev/media_group/logical_media /media
 
 #Python stuff
-pip install virtualenv
-pip install virtualenvwrapper
-cat << EOF >> /home/ubuntu/.bashrc
-export WORKON_HOME=$HOME/.virtualenvs
-export PROJECT_HOME=$HOME/Devel
-source /usr/local/bin/virtualenvwrapper.sh
-EOF
-mkvirtualenv -p /usr/bin/python2.7 py27
-mkvirtualenv -p /usr/bin/python3.4 py34
-workon py34
-pip install ipython
-pip install boto
-workon py27
-pip install ipython
-pip install boto
-deactivate
+#pip install virtualenv
+#pip install virtualenvwrapper
+#cat << EOF >> /home/ubuntu/.bashrc
+#export WORKON_HOME=$HOME/.virtualenvs
+#export PROJECT_HOME=$HOME/Devel
+#source /usr/local/bin/virtualenvwrapper.sh
+#EOF
+#mkvirtualenv -p /usr/bin/python2.7 py27
+#mkvirtualenv -p /usr/bin/python3.4 py34
+#workon py34
+#pip install ipython
+#pip install boto
+#workon py27
+#pip install ipython
+#pip install boto
+#deactivate
 
 #set up sync from s3 cron
 COMMAND='(if /home/ubuntu/yggdrasil-master/scripts/python/s3_sync_not_running ; then echo "running s3 sync" && aws s3 sync s3://'
