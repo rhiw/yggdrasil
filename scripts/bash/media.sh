@@ -13,6 +13,7 @@ pip install virtualenv
 pip install virtualenvwrapper
 
 cat << EOF >> /home/ubuntu/.bashrc
+export LD_LIBRARY_PATH=/usr/lib/plexmediaserver
 export WORKON_HOME=$HOME/.virtualenvs
 export PROJECT_HOME=$HOME/Devel
 source /usr/local/bin/virtualenvwrapper.sh
@@ -30,14 +31,14 @@ pip install boto
 pip install requests
 
 #install plex
-python /home/ubuntu/yggdrasil_master/scripts/python/get_plex.py /home/ubuntu/plex_update.dub
+python /home/ubuntu/yggdrasil-master/scripts/python/get_plex.py /home/ubuntu/plex_update.deb
 apt-get install avahi-daemon -y
 apt-get install avahi-utils -y
 dpkg -i /home/ubuntu/plex_update.deb
 apt-get -f install -y
 
 #config plex
-sed -i 's/\/>/ disableRemoteSecurity=\"1\" AcceptedEULA=\"1\" FirstRun=\"0\"\/>/g' /var/lib/plexmediaserver/Library/Application\ Support/Plex\ Media\ Server/Preferences.xml
+sed -i 's/\/>/ disableRemoteSecurity=\"1\" AcceptedEULA=\"1\" FirstRun=\"0\"\/>/g' '/var/lib/plexmediaserver/Library/Application Support/Plex Media Server/Preferences.xml'
 pkill -9 [pP]lex
 service plexmediaserver start
 
