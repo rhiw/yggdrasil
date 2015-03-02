@@ -50,7 +50,7 @@ mount /dev/media_group/logical_media /media
 #deactivate
 
 #set up sync from s3 cron
-COMMAND='(if /home/ubuntu/yggdrasil-master/scripts/python/s3_sync_not_running ; then echo "running s3 sync" && aws s3 sync s3://'
+COMMAND='(if /home/ubuntu/yggdrasil-master/scripts/python/s3_sync_not_running ; then echo "running s3 sync" && /usr/local/bin/aws s3 sync s3://'
 COMMAND+=$MEDIA_SERVER_S3_PATH
 COMMAND+=' /media ; else echo "s3 sync already running" ; fi)'
 JOB="* * * * * root $COMMAND 2>&1 | /usr/bin/logger -t s3_sync"
