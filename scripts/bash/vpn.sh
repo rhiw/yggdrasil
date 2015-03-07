@@ -16,12 +16,11 @@ tar -xvf EasyRSA-2.2.2.tgz
 cp -r EasyRSA-2.2.2/* /etc/openvpn/easy-rsa/
 
 #Set up certs and keys
-cd /etc/openvpn/easy-rsa
 if [ $VPN_SERVER_CERTS_S3_PREFIX = None ]
     then
         eval ./vpn_generate_certs.sh
     else
-        eval "aws s3 cp s3://" $VPN_SERVER_CERTS_S3_PREFIX " /etc/openvpn/keys --recursive"
+        eval "aws s3 cp s3://"$VPN_SERVER_CERTS_S3_PREFIX" /etc/openvpn/easy-rsa/keys --recursive"
 fi
 
 #Set up config
@@ -29,7 +28,7 @@ if [ $VPN_SERVER_CONFIG_S3_PATH = None ]
     then
         eval ./vpn_generate_config.sh
     else
-        eval "aws s3 cp s3://" $VPN_SERVER_CONFIG_S3_PATH " /etc/openvpn"
+        eval "aws s3 cp s3://"$VPN_SERVER_CONFIG_S3_PATH" /etc/openvpn"
 fi
 
 service openvpn start

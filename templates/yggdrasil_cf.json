@@ -568,7 +568,6 @@
             "Value": {"Fn::GetAtt" : ["NATInstance1", "PrivateIp"]}
         },
         "VPCId" : {
-            "Description" : "VPCId of the newly created VPC",
             "Value" :  { "Ref" : "VPC" }
         },
         "VPNDNS" : {
