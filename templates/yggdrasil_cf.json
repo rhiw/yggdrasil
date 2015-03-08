@@ -41,12 +41,19 @@
         },
         "VpnCertsS3Prefix": {
             "Type": "String",
+            "Default": "None",
             "Description" : "The prefix of the VPN certs and keys (for the VPN server) in S3"
         },
         "VpnServerConfigS3Path": {
             "Type": "String",
+            "Default": "None",
             "Description" : "The path to the VPN server config in S3"
-        }
+        },
+        "VpnServerDestinationS3Prefix": {
+            "Type": "String",
+            "Default": "None",
+            "Description" : "The prefix for VPN client materials tarball in S3. Only needed if VpnCertsS3Prefix and VpnServerConfigS3Path not provided."
+        },
     },
     "Mappings" : {
         "CidrMap" : {

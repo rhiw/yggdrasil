@@ -26,7 +26,7 @@ fi
 #Set up config
 if [ $VPN_SERVER_CONFIG_S3_PATH = None ]
     then
-        eval ./vpn_generate_config.sh
+        cp /home/ec2-user/yggdrasil-master/templates/server.conf /etc/openvpn/server.conf
     else
         eval "aws s3 cp s3://"$VPN_SERVER_CONFIG_S3_PATH" /etc/openvpn"
 fi
