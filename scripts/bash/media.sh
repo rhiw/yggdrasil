@@ -60,4 +60,13 @@ $JOB
 
 EOF
 
+#set media resizer cron
+COMMAND='/home/ubuntu/yggdrasil-master/scripts/python/volume_resizer.py /media .8'
+JOB="*/5 * * * * root $COMMAND 2>&1 | /usr/bin/logger -t media_volume_resizer"
+
+cat << EOF > /etc/cron.d/volume_resizer
+$JOB
+
+EOF
+
 exit 0
