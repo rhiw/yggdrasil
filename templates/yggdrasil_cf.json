@@ -345,6 +345,7 @@
                                 {"Fn::Join": [" ", ["./yggdrasil-master/scripts/bash/vpn.sh", 
                                                     {"Ref": "VpnCertsS3Prefix"}, 
                                                     {"Ref": "VpnServerConfigS3Path"},
+                                                    {"Ref": "VpnServerDestinationS3Prefix"},
                                                     ">",
                                                     "/var/log/vpn_setup.log"]]} 
                             ]
