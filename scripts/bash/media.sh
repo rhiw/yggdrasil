@@ -43,11 +43,13 @@ pkill -9 [pP]lex
 service plexmediaserver start
 
 #Set up LVM
+echo "Start doing lvm stuff"
 apt-get install lvm2 -y
 vgcreate media_group /dev/xvdh
 lvcreate --name logical_media -l 100%VG media_group
 mkfs -t ext4 /dev/media_group/logical_media
 mount /dev/media_group/logical_media /media
+echo "Stop doing lvm stuff"
 
 #set up sync from s3 cron
 COMMAND='(if /home/ubuntu/yggdrasil-master/scripts/python/s3_sync_not_running ; then echo "running s3 sync" && /usr/local/bin/aws s3 sync s3://'
