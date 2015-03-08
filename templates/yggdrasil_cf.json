@@ -53,7 +53,7 @@
             "Type": "String",
             "Default": "None",
             "Description" : "The prefix for VPN client materials tarball in S3. Only needed if VpnCertsS3Prefix and VpnServerConfigS3Path not provided."
-        },
+        }
     },
     "Mappings" : {
         "CidrMap" : {
