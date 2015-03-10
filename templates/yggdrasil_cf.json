@@ -584,7 +584,7 @@
             "Condition" : "CreateDNSResources"
         },
         "VPNClientMaterials" : {
-            "Value": {"Fn::Join" : ["s3://", {"Ref" : "VpnServerDestinationS3Prefix"}, "/", "client_materials.tgz"]},
+            "Value": {"Fn::Join" : ["/", ["s3:/", {"Ref" : "VpnServerDestinationS3Prefix"}, "client_materials.tgz"]]},
             "Condition" : "OutputVPNTarball"
         },
         "VPNExternalIP" : {
