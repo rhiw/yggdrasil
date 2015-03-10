@@ -76,7 +76,7 @@ def attach_volume(volume, device_name, instance=instance_info['instanceId']):
     logger.info("Attaching volume " + volume)
     ec2_conn.attach_volume(volume, instance, device_name)
 
-def create_new_volume(size=1024, az=instance_info['availabilityZone'], volume_type='io1', iops=3000, timeout=600, retry=10):
+def create_new_volume(size=1024, az=instance_info['availabilityZone'], volume_type='io1', iops=4000, timeout=600, retry=10):
     logger.info("Creating new volume of size {0} az {1} type {2} iops {3}".format(size, az, volume_type, iops))
     volume = ec2_conn.create_volume(size, az, volume_type=volume_type, iops=iops)
     logger.info("New volume: {0}".format(str(volume)))

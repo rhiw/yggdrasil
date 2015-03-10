@@ -76,7 +76,8 @@
         }
     },
     "Conditions" : {
-        "CreateDNSResources": {"Fn::Not": [{"Fn::Equals" : [{"Ref" : "HostedZoneName"}, "None"]}]}
+        "CreateDNSResources": {"Fn::Not": [{"Fn::Equals" : [{"Ref" : "HostedZoneName"}, "None"]}]},
+        "OutputVPNTarball": {"Fn::Not": [{"Fn::Equals" : [{"Ref" : "VpnServerDestinationS3Prefix"}, "None"]}]}
     },
     "Resources" : {
         "VPC" : {
@@ -404,7 +405,7 @@
             "Properties" : {
                 "Size" : "1024",
                 "VolumeType" : "io1",
-                "Iops" : "3000",
+                "Iops" : "4000",
                 "AvailabilityZone" : { "Fn::GetAtt" : [ "MediaServer1", "AvailabilityZone" ] }
             },
             "DependsOn" : "MediaServer1"
@@ -581,6 +582,10 @@
         "VPNDNS" : {
             "Value": {"Ref": "VPNDNS"},
             "Condition" : "CreateDNSResources"
+        },
+        "VPNClientMaterials" : {
+            "Value": {"Fn::Join" : ["s3://", {"Ref" : "VpnServerDestinationS3Prefix"}, "/", "client_materials.tgz"]},
+            "Condition" : "OutputVPNTarball"
         },
         "VPNExternalIP" : {
             "Value": {"Ref": "VPNEip1"}
