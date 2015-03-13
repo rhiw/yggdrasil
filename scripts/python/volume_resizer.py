@@ -1,5 +1,3 @@
-#!/usr/bin/python3.4
-
 from boto import ec2, utils
 import logging
 import shutil

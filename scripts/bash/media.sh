@@ -13,12 +13,13 @@ pip install virtualenv
 pip install virtualenvwrapper
 
 cat << EOF >> /home/ubuntu/.bashrc
-export LD_LIBRARY_PATH=/usr/lib/plexmediaserver
 export WORKON_HOME=$HOME/.virtualenvs
 export PROJECT_HOME=$HOME/Devel
 source /usr/local/bin/virtualenvwrapper.sh
 EOF
+
 source /home/ubuntu/.bashrc
+source /usr/local/bin/virtualenvwrapper.sh
 
 mkvirtualenv -p /usr/bin/python2.7 py27
 mkvirtualenv -p /usr/bin/python3.4 py34
@@ -63,7 +64,7 @@ $JOB
 EOF
 
 #set media resizer cron
-COMMAND='/home/ubuntu/yggdrasil-master/scripts/python/volume_resizer.py /media .8'
+COMMAND='workon py34 && python /home/ubuntu/yggdrasil-master/scripts/python/volume_resizer.py /media .8'
 JOB="*/5 * * * * root $COMMAND 2>&1 | /usr/bin/logger -t media_volume_resizer"
 
 cat << EOF > /etc/cron.d/volume_resizer
