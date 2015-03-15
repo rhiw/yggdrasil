@@ -406,11 +406,61 @@
                 }
             }
         },
+        "MediaServerRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "AssumeRolePolicyDocument": {
+                     "Version": "2012-10-17",
+                     "Statement": [
+                        {
+                            "Sid": "",
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": "ec2.amazonaws.com"
+                            },
+                            "Action": "sts:AssumeRole"
+                        }
+                    ]
+                },
+                "Path": "/",
+                "Policies": [
+                    {
+                        "PolicyName": "EC2ReadOnly",
+                        "PolicyDocument": {
+                            "Version": "2012-10-17",
+                            "Statement": [
+                                {
+                                    "Effect": "Allow",
+                                    "Action": "ec2:Describe*",
+                                    "Resource": "*"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "PolicyName": "S3ReadOnly",
+                        "PolicyDocument": {
+                            "Version": "2012-10-17",
+                            "Statement": [
+                                {
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "s3:Get*",
+                                        "s3:List*"
+                                    ],
+                                    "Resource": "*"
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
         "MediaServerRoleProfile": {
             "Type": "AWS::IAM::InstanceProfile",
             "Properties": {
                 "Path": "/",
-                "Roles": ["media_server"]
+                "Roles": [{"Ref": "MediaServerRole"}]
             }
         },   
         "MediaServer1" : {
@@ -469,6 +519,121 @@
                 "Device" : "/dev/xvdh"
             },
             "DependsOn" : "MediaVolume1"
+        },
+        "DownloadServerRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "AssumeRolePolicyDocument": {
+                     "Version": "2012-10-17",
+                     "Statement": [
+                        {
+                            "Sid": "",
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": "ec2.amazonaws.com"
+                            },
+                            "Action": "sts:AssumeRole"
+                        }
+                    ]
+                },
+                "Path": "/",
+                "Policies": [
+                    {
+                        "PolicyName": "EC2ReadOnly",
+                        "PolicyDocument": {
+                            "Version": "2012-10-17",
+                            "Statement": [
+                                {
+                                    "Effect": "Allow",
+                                    "Action": "ec2:Describe*",
+                                    "Resource": "*"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "PolicyName": "S3ReadOnly",
+                        "PolicyDocument": {
+                            "Version": "2012-10-17",
+                            "Statement": [
+                                {
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "s3:Get*",
+                                        "s3:List*",
+                                        "s3:Put*"
+                                ],
+                                    "Resource": "*"
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+        "DownloadServerRoleProfile": {
+            "Type": "AWS::IAM::InstanceProfile",
+            "Properties": {
+                "Path": "/",
+                "Roles": [{"Ref": "DownloadServerRole"}]
+            }
+        },   
+        "DownloadServer1" : {
+            "Type" : "AWS::EC2::Instance",
+            "Properties" : {
+                "InstanceType" : { "Ref" : "EC2InstanceType" },
+                "KeyName" : { "Ref" : "KeyName" },
+                "ImageId": { "Fn::FindInMap" : [ "MediaInstanceMap", { "Ref" : "AWS::Region" }, "64"]},
+                "Tags" : [
+                    { "Key" : "Name", "Value" : "Download1" }
+                ],
+                "NetworkInterfaces" : [{
+                    "GroupSet" : [{ "Ref" : "PublicSecurityGroup" }, { "Ref" :  "VPNAddressesSecurityGroup"}],
+                    "AssociatePublicIpAddress" : "false",
+                    "DeviceIndex" : "0",
+                    "DeleteOnTermination" : "true",
+                    "SubnetId" : { "Ref" : "PublicSubnet1" }
+                }],
+                "EbsOptimized" : "true",
+                "IamInstanceProfile" : { "Ref": "DownloadServerRoleProfile" },
+                "UserData": {
+                    "Fn::Base64": {
+                        "Fn::Join": [
+                            "\n",[
+                                "#!/bin/bash",
+                                "cd /home/ubuntu", 
+                                "until curl -L https://github.com/rhiw/yggdrasil/archive/master.tar.gz | tar xz; do",
+                                "    echo 'Cannot reach github yet, retrying in 1s'",
+                                "    sleep 1",
+                                "done",
+                                {"Fn::Join": [" ", ["./yggdrasil-master/scripts/bash/download.sh", 
+                                                    {"Ref": "MediaServerS3Path"}, 
+                                                    ">",
+                                                    "/var/log/download_setup.log"]]} 
+                            ]
+                        ]
+                    }
+                }
+            }
+        },
+        "DownloadVolume1" : {
+            "Type" : "AWS::EC2::Volume",
+            "Properties" : {
+                "Size" : "1024",
+                "VolumeType" : "io1",
+                "Iops" : "4000",
+                "AvailabilityZone" : { "Fn::GetAtt" : [ "DownloadServer1", "AvailabilityZone" ] }
+            },
+            "DependsOn" : "DownloadServer1"
+        },
+        "DownloadMount1" : {
+            "Type" : "AWS::EC2::VolumeAttachment",
+            "Properties" : {
+                "InstanceId" : { "Ref" : "DownloadServer1" },
+                "VolumeId"  : { "Ref" : "DownloadVolume1" },
+                "Device" : "/dev/xvdh"
+            },
+            "DependsOn" : "DownloadVolume1"
         },
         "NATSecurityGroup" : {
             "Type" : "AWS::EC2::SecurityGroup",
@@ -611,9 +776,31 @@
                     { "Fn::GetAtt" : [ "MediaServer1" , "PrivateIp" ] }
                 ]
             }
+        },
+        "DownloadDNS" : {
+            "Type" : "AWS::Route53::RecordSet",
+            "Condition" : "CreateDNSResources",
+            "Properties" : {
+                "HostedZoneName" : {
+                    "Fn::Join" : [ "", [{ "Ref" : "HostedZoneName" }, "."]]
+                },
+                "Comment" : "DNS name for download instance.",
+                "Name" : {
+                    "Fn::Join" : [ "", ["download.internal.", { "Ref": "AWS::StackName" }, ".", { "Ref" : "HostedZoneName" }] ]
+                },
+                "Type" : "A",
+                "TTL" : "900",
+                "ResourceRecords" : [
+                    { "Fn::GetAtt" : [ "DownloadServer1" , "PrivateIp" ] }
+                ]
+            }
         }
     },
     "Outputs" : {
+        "DownloadDNS" : {
+            "Value": {"Ref": "DownloadDNS"},
+            "Condition" : "CreateDNSResources"
+        },
         "MediaDNS" : {
             "Value": {"Ref": "MediaDNSPrimary"},
             "Condition" : "CreateDNSResources"
