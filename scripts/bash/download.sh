@@ -33,11 +33,12 @@ pip install requests
 
 #Set up LVM
 echo "Start doing lvm stuff"
+mkdir /download
 apt-get install lvm2 -y
 vgcreate download_group /dev/xvdh
 lvcreate --name logical_download -l 100%VG download_group
-mkfs -t ext4 /dev/download_group/download_media
-mount /dev/download_group/download_media /download
+mkfs -t ext4 /dev/download_group/logical_download
+mount /dev/download_group/logical_download /download
 echo "Stop doing lvm stuff"
 
 #set volume resizer cron
