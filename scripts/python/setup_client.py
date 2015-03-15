@@ -1,11 +1,62 @@
-from boto import config, cloudformation
-from boto import s3 as s3_boto
+from aws import AWS
+from contextlib import contextmanager
 import logging
 import os
 from os import path
+import shutil
 import sys
+import tarfile
+import tempfile
+import subprocess
 
 logger = logging.getLogger('setup_client')
+
+@contextmanager
+def TempDir():
+    td = tempfile.mkdtemp()
+    yield td
+    shutil.rmtree(td)
+
+def ghetto_tar(tf):
+    #I can't get shutil or tarfile to work right now. Might be borked installation of python
+    subprocess.check_call(['tar', '-xf', tf])
+
+def get_client_materials_from_s3(s3_path, region='us-east-1', akid=None, skid=None):
+    logger.debug("Getting client materials from S3")
+    if s3_path.startswith('s3://'):
+        s3_path = s3_path[5:]
+    path_split = s3_path.split('/')
+    bucket_name = path_split[0]
+    
+    aws = AWS(region, akid, skid)
+    bucket = aws.s3.get_bucket(bucket_name)
+    key = bucket.get_key('/'.join(path_split[1:]))    
+
+    with TempDir() as temp_dir:
+        temp_file_name = path.join(temp_dir, 'client_materials.tgz')
+        with open(temp_file_name, 'w+') as temp_file:
+            key.get_contents_to_file(temp_file)
+            #tf = tarfile.open(temp_file.name)
+            #tf.extractall(temp_dir)
+            ghetto_tar(temp_file_name)
+            print os.listdir(temp_dir) 
+
+get_client_materials_from_s3('dalton_vpn/gent8/client_materials.tgz')
+
+def get_openvpn_path(path=None):
+    logger.debug("Getting openvpn path based on preference and platform standards")
+    if path is None:
+        if sys.platform.startswith('linux'):
+            path = '/etc/openvpn'
+        elif sys.platform.startswith('win'):
+            path = 'C:\Program Files\OpenVPN\config'
+        elif sys.platform.startswith('darwin'):
+            path = path.expanduser('~/Library/Application Support/Tunnelblick/Configurations')
+        else:
+            raise RuntimeError("Platform {} not recognized. You're not on Linux, Windows, or Mac? Really?".format(sys.platform))
+
+    logger.debug("OpenVPN path: {}".format(path))
+    return confirm_path(path)
 
 def push_logs_to_std_out(level='INFO'):
     root = logging.getLogger()
@@ -17,18 +68,6 @@ def push_logs_to_std_out(level='INFO'):
     ch.setFormatter(formatter)
     root.addHandler(ch)    
 
-def confirm_aws_creds():
-    logger.debug("Confirming AWS creds in some section in boto.config")
-    akid = False
-    skid = False
-    for section in config.sections():
-        akid = akid or config.has_option(section, 'aws_access_key_id')
-        askid = skid or config.has_option(section, 'aws_secret_access_key')
-    if not akid and skid:
-        raise RuntimeError("No aws creds recognized by boto.")
-
-    logger.debug("AWS creds present")
-
 def confirm_path(destination_path):
     logger.debug("Confirming write permissions to {}".format(destination_path))
     if not os.access(destination_path, os.W_OK):
@@ -39,52 +78,5 @@ def confirm_path(destination_path):
         os.makedirs(destination_path)
     
     logger.debug("{} exists and we have write permissions.".format(destination_path))
+    return destination_path
 
-class Lazy(object):
-    def __init__(self, func):
-        self.func = func
-        self.func_name = func.__name__
-
-    def __get__(self, obj, cls=None):
-        logger.debug("Evaluating {}".format(self.func_name))
-        val = self.func(obj)
-        setattr(obj, self.func_name, val)
-        return val
-
-class AWS(object):
-    def __init__(self, region='us-east-1', akid=None, skid=None):
-        logger.debug("Creating connection to AWS in region {0} with access key {1}".format(region, akid))
-
-        if not (akid and skid):
-            confirm_aws_creds()
-
-        self.region = region
-        self.akid = akid
-        self.skid = skid
-
-    @Lazy
-    def cf(self):
-        return cloudformation.connect_to_region(self.region, aws_access_key_id=self.akid, aws_secret_access_key=self.skid)
-
-    @Lazy
-    def s3(self):
-        return s3_boto.connect_to_region(self.region, aws_access_key_id=self.akid, aws_secret_access_key=self.skid)
-
-    def get_stacks(self):
-        logger.debug("Getting extant stacks from CloudFormation")
-        stacks = []
-        return self.cf.list_stacks(['CREATE_IN_PROGRESS',
-                                    'CREATE_FAILED',
-                                    'CREATE_COMPLETE',
-                                    'ROLLBACK_IN_PROGRESS',
-                                    'ROLLBACK_FAILED',
-                                    'ROLLBACK_COMPLETE',
-                                    'DELETE_IN_PROGRESS',
-                                    'DELETE_FAILED',
-                                    'UPDATE_IN_PROGRESS',
-                                    'UPDATE_COMPLETE_CLEANUP_IN_PROGRESS',
-                                    'UPDATE_COMPLETE',
-                                    'UPDATE_ROLLBACK_IN_PROGRESS',
-                                    'UPDATE_ROLLBACK_FAILED',
-                                    'UPDATE_ROLLBACK_COMPLETE_CLEANUP_IN_PROGRESS',
-                                    'UPDATE_ROLLBACK_COMPLETE'])
