@@ -13,7 +13,7 @@ The core of yggdrasil is a [CloudFormation](http://docs.aws.amazon.com/AWSCloudF
 
 yggdrasil also contains several scripts (currently all bash and Python) that make the whole thing work together. The salient scripted features include:
 
-* Automated setup of a certificate authority (CA), configuration of an OpenVPN server, and generation of VPN credentials and client configuration files
+* Automated setup of a certificate authority (CA), configuration of an OpenVPN server, and generation of VPN credentials
 * Automated setup of a [Plex Media Server](https://plex.tv/) with a primary volume that scales up in size as it fills (using [LVM](http://en.wikipedia.org/wiki/Logical_Volume_Manager_%28Linux%29) and [Elastic Block Store (EBS)](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AmazonEBS.html))
 * Automated setup of a [Transmission](http://www.transmissionbt.com/) server (nearing completion)
 * Automated configuration of an OpenVPN client (rough bash script available, better Python version in progress)
