@@ -588,7 +588,7 @@
                     { "Key" : "Name", "Value" : "Download1" }
                 ],
                 "NetworkInterfaces" : [{
-                    "GroupSet" : [{ "Ref" : "PublicSecurityGroup" }, { "Ref" :  "VPNAddressesSecurityGroup"}],
+                    "GroupSet" : [{ "Ref" : "PublicSecurityGroup" }, { "Ref" : "PrivateSecurityGroup" }, { "Ref" :  "VPNAddressesSecurityGroup"}],
                     "AssociatePublicIpAddress" : "false",
                     "DeviceIndex" : "0",
                     "DeleteOnTermination" : "true",
