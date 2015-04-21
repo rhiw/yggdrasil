@@ -41,8 +41,6 @@ def get_client_materials_from_s3(s3_path, region='us-east-1', akid=None, skid=No
             ghetto_tar(temp_file_name)
             print os.listdir(temp_dir) 
 
-get_client_materials_from_s3('dalton_vpn/gent8/client_materials.tgz')
-
 def get_openvpn_path(path=None):
     logger.debug("Getting openvpn path based on preference and platform standards")
     if path is None:
