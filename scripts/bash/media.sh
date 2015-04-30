@@ -32,7 +32,7 @@ pip install boto
 pip install requests
 
 #install plex
-python /home/ubuntu/yggdrasil-master/scripts/python/get_plex.py /home/ubuntu/plex_update.deb
+python /home/ubuntu/yggdrasil-master/scripts/python/get_plex.py -p /home/ubuntu/plex_update.deb
 apt-get install avahi-daemon -y
 apt-get install avahi-utils -y
 dpkg -i /home/ubuntu/plex_update.deb
@@ -64,7 +64,7 @@ $JOB
 EOF
 
 #set media resizer cron
-COMMAND='source /home/ubuntu/.bashrc && workon py34 && python /home/ubuntu/yggdrasil-master/scripts/python/volume_resizer.py /media .8'
+COMMAND='source /home/ubuntu/.bashrc && workon py34 && python /home/ubuntu/yggdrasil-master/scripts/python/volume_resizer.py -m /media -r .8'
 JOB="*/5 * * * * root $COMMAND 2>&1 | /usr/bin/logger -t media_volume_resizer"
 
 cat << EOF > /etc/cron.d/volume_resizer

@@ -1,41 +1,43 @@
+#!/usr/bin/python3.4
+
+from aws import AWS
+from aws_utils import create_volume
 from boto import ec2, utils
+from general_utils import set_up_stdout_logging, subprocess_check_retries
 import logging
+import optparse
 import shutil
 import subprocess
-from sys import argv, stdout
 from time import sleep
 
 logger = logging.getLogger('volume_resizer')
 
-instance_info = utils.get_instance_identity()['document']
-ec2_conn = ec2.connect_to_region(instance_info['region'])
+def parse_args():
+    parser = optparse.OptionParser()
+    parser.add_option('-m', '--mount_point', help='The mount point for the volume to be actively resized')
+    parser.add_option('-r', '--ratio', help='The ratio of disk usage at which to add another volume. DEFAULT: .8', default=.8, type='float')
+    parser.add_option('-i', '--increment', help='The size of the volume to add when the ratio is exceeded (GB). DEFAULT: 1024', default=1024, type='int')
+    parser.add_option('-g', '--logical_group', help='The logical group (LVM) to which the new volume should be added. DEFAULT: media_group')
+    parser.add_option('-d', '--logical_device', help='The logical device (LVM) to which the new volume should be added. DEFAULT: logical_media')
+
+    return parser.parse_args()
 
 def main():
-    mount_point = argv[1]
-    ratio = argv[2]
+    options, args = parse_args()
 
-    if get_usage_ratio(mount_point) < float(ratio):
-        logger.info("{0} usage ratio is less than {1}. Quitting".format(mount_point, ratio))
+    if get_usage_ratio(options.mount_point) < options.ratio:
+        logger.info("{0} usage ratio is less than {1}. Quitting".format(options.mount_point, options.ratio))
         return
 
     logger.info("Proceeding with extending media volume")
 
-    volume_id = create_new_volume()
-    new_device_name = '/dev/' + increment_partition_name(get_sorted_partitions()[-1])
-    attach_volume(volume_id, new_device_name)
-    extend_lvm(new_device_name)
+    aws = AWS()
+    instance_info = utils.get_instance_identity()['document']
 
-def check_retries(args, max_time=600):
-    sleep_time = 1
-    while sleep_time < max_time:
-        try:
-            subprocess.check_call(args)
-        except subprocess.CalledProcessError:
-            logger.error("Subprocess call with args {0} failed. Sleeping {1}".format(str(args), str(sleep_time)))
-            sleep(sleep_time)
-            sleep_time *= 2
-        else:
-            break
+    volume_id = create_volume(aws.ec2, options.increment, instance_info['availabilityZone'])
+    new_device_name = '/dev/' + increment_partition_name(get_sorted_partitions()[-1])
+    aws.ec2.attach_volume(volume_id, instance_info['instanceId'], new_device_name)
+    extend_lvm(new_device_name, options.logical_group, options.logical_device)
 
 def extend_lvm(new_device, logical_group='media_group', logical_device='logical_media'):
     '''
@@ -43,16 +45,16 @@ def extend_lvm(new_device, logical_group='media_group', logical_device='logical_
     '''
     logger.info("Adding device {0} to logical group {1}".format(new_device, logical_group))
     args = ['vgextend', logical_group, new_device]
-    check_retries(args)
+    subprocess_check_retries(args)
 
     full_logical_name = '/'.join(['/dev', logical_group, logical_device])
     logger.info("Resizing {0} to use entire volume group".format(full_logical_name))
     args = ['lvextend', '-l', '100%VG', full_logical_name]
-    check_retries(args)
+    subprocess_check_retries(args)
 
     logger.info("Resizing file system on {0} to use whole logical volume".format(full_logical_name))
     args = ['resize2fs', full_logical_name]
-    check_retries(args)   
+    subprocess_check_retries(args)   
 
 def increment_partition_name(name):
     logger.info("Incrementing name of partition " + name)
@@ -70,25 +72,6 @@ def get_sorted_partitions():
 
     return sorted(parts)
 
-def attach_volume(volume, device_name, instance=instance_info['instanceId']):
-    logger.info("Attaching volume " + volume)
-    ec2_conn.attach_volume(volume, instance, device_name)
-
-def create_new_volume(size=1024, az=instance_info['availabilityZone'], volume_type='io1', iops=4000, timeout=600, retry=10):
-    logger.info("Creating new volume of size {0} az {1} type {2} iops {3}".format(size, az, volume_type, iops))
-    volume = ec2_conn.create_volume(size, az, volume_type=volume_type, iops=iops)
-    logger.info("New volume: {0}".format(str(volume)))
-    
-    slept_time=0
-    while volume.update() != 'available':
-        logger.debug("Waiting for new volume to become available. Sleeping " + str(retry))
-        sleep(retry)
-        slept_time += retry
-        if slept_time > timeout:
-            raise RuntimeError('Instance did not become available')
-
-    return volume.id
-
 def get_usage_ratio(mount):
     logger.info("Getting usage ratio for mount mounted at " + mount)
     usage = shutil.disk_usage(mount)
@@ -96,16 +79,7 @@ def get_usage_ratio(mount):
     logger.info("Usage ratio: %f", ratio)
     return ratio
 
-def set_up_stdout_logging():
-    logger.setLevel(logging.INFO)
-    ch = logging.StreamHandler(stdout)
-    ch.setLevel(logging.INFO)
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    ch.setFormatter(formatter)
-    logger.addHandler(ch)
-
 if __name__ == '__main__':
     set_up_stdout_logging()
     main()
-
 

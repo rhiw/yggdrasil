@@ -18,7 +18,10 @@ ssh-keygen -f /home/ec2-user/.ssh/authorized_keys -e -m PKCS8 > /home/ec2-user/e
 
 #Encrypt and tar VPN materials
 mkdir client_materials
-openssl rand 32 -out vpn_secret
+
+#The tarball we generate is too big for asymmetric encryption, so we generate a symmetric shared key and use our asymmetric key to encrypt it
+openssl rand 256 -out vpn_secret
+
 openssl enc -e -in /etc/openvpn/easy-rsa/keys/ca.crt -out client_materials/ca.crt.encrypted -aes256 -k vpn_secret
 openssl enc -e -in /etc/openvpn/easy-rsa/keys/client0.crt -out client_materials/client0.crt.encrypted -aes256 -k vpn_secret
 openssl enc -e -in /etc/openvpn/easy-rsa/keys/client0.key -out client_materials/client0.key.encrypted -aes256 -k vpn_secret

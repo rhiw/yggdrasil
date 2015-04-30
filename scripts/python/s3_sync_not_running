@@ -4,6 +4,8 @@ import os
 import re
 import sys
 
+# I know I could accomplish the same thing by parsing ps, but I wanted to learn about the structure of /proc
+
 for proc in [p for p in os.listdir('/proc') if re.match('\d+', p)]:
     with open(os.path.join('/proc', proc, 'cmdline'), 'r') as fp:
         cmd = ' '.join(fp.read().split('\0'))

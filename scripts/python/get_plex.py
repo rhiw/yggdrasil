@@ -1,15 +1,38 @@
 #!/usr/bin/python3.4
 
+from general_utils import set_up_stdout_logging
+import logging
+import optparse
 import re
 import requests
 import sys
 
-path = sys.argv[1]
+logger = logging.getLogger('get_plex')
 
-downloads_page = requests.get('https://plex.tv/downloads')
-amd64_deb_path = re.search('(https.*amd64\.deb)', downloads_page.text).groups()[0]
-amd64_deb = requests.get(amd64_deb_path, stream=True)
+def parse_args():
+    parser = optparse.OptionParser()
+    parser.add_option('-p', '--path', desc='The path to the file to which the Plex .deb should be written')
 
-with open(path, 'wb') as fd:
-    for chunk in amd64_deb.iter_content(1024):
-        fd.write(chunk) 
+    return parser.parse_args()
+
+def main():
+    options, args = parse_args()
+
+    plex_download_path = 'https://plex.tv/downloads'
+    logger.info("Getting Plex downloads page {0}".format(plex_download_path))
+    downloads_page = requests.get(plex_download_path)
+
+    logger.info("Finding path to 64-bit deb packaged linked from plex downloads")
+    amd64_deb_path = re.search('(https.*amd64\.deb)', downloads_page.text).groups()[0]
+    
+    logger.info("Getting deb from {0} to file {1}".format(amd64_deb_path, options.path))
+    amd64_deb = requests.get(amd64_deb_path, stream=True)
+
+    with open(options.path, 'wb') as fd:
+        for chunk in amd64_deb.iter_content(1024):
+            fd.write(chunk)
+
+if __name__ == '__main__':
+    set_up_stdout_logging()
+    main()
+ 

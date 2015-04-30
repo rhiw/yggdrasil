@@ -6,7 +6,7 @@ VPN_SERVER_CERTS_S3_PREFIX=$1
 VPN_SERVER_CONFIG_S3_PATH=$2
 DESTINATION_S3_PREFIX=$3
 
-#I don't know if this NAT stuff is necessary on VPN server, but it seems like it might be and definitely works
+#I haven't verified that this NAT stuff is necessary on VPN server, but it seems like it might be and definitely works
 /home/ec2-user/yggdrasil-master/scripts/bash/nat.sh
 
 #Get EasyRSA 

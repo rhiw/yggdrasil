@@ -1,5 +1,9 @@
-from boto import config, cloudformation
+from boto import cloudformation as cf_boto
+from boto import dynamodb2 as ddb_boto
+from boto import ec2 as ec2_boto
+from boto import config
 from boto import s3 as s3_boto
+from boto import vpc as vpc_boto
 import logging
 
 logger = logging.getLogger('aws')
@@ -38,38 +42,28 @@ class AWS(object):
         self.akid = akid
         self.skid = skid
 
+    def _connect(self, boto_module):
+        # The boto modules are consistent in that they all have connect_to_region
+        logger.debug("Connection module {0}".format(boto_module))
+        return boto_module.connect_to_region(self.region, aws_access_key_id=self.akid, aws_secret_access_key=self.skid)
+
     @Lazy
     def cf(self):
-        return cloudformation.connect_to_region(self.region, aws_access_key_id=self.akid, aws_secret_access_key=self.skid)
+        return self._connect(cf_boto)
+
+    @Lazy
+    def ddb(self):
+        return self._connect(ddb_boto)
+
+    @Lazy
+    def ec2(self):
+        return self._connect(ec2_boto)
 
     @Lazy
     def s3(self):
-        return s3_boto.connect_to_region(self.region, aws_access_key_id=self.akid, aws_secret_access_key=self.skid)
+        return self._connect(s3_boto)
 
-    def get_stacks(self):
-        logger.debug("Getting extant stacks from CloudFormation")
-        stacks = []
-        marker = None
-        while True:
-            response = self.cf.list_stacks(['CREATE_IN_PROGRESS',
-                                            'CREATE_FAILED',
-                                            'CREATE_COMPLETE',
-                                            'ROLLBACK_IN_PROGRESS',
-                                            'ROLLBACK_FAILED',
-                                            'ROLLBACK_COMPLETE',
-                                            'DELETE_IN_PROGRESS',
-                                            'DELETE_FAILED',
-                                            'UPDATE_IN_PROGRESS',
-                                            'UPDATE_COMPLETE_CLEANUP_IN_PROGRESS',
-                                            'UPDATE_COMPLETE',
-                                            'UPDATE_ROLLBACK_IN_PROGRESS',
-                                            'UPDATE_ROLLBACK_FAILED',
-                                            'UPDATE_ROLLBACK_COMPLETE_CLEANUP_IN_PROGRESS',
-                                            'UPDATE_ROLLBACK_COMPLETE'], marker)
-            stacks.extend(response)
-            marker = response.marker
+    @Lazy
+    def vpc(self):
+        return self._connect(vpc_boto)
 
-            if marker is None:
-                break
-
-        return stacks
