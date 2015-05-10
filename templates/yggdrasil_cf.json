@@ -66,13 +66,36 @@
             "PublicSubnet3" : {"cidr" : "172.16.160.0/20"}         
         },
         "NATInstanceMap" : {
-            "us-east-1" : {"64" : "ami-669d560e"}
+            "us-east-1" : {"64" : "ami-1ecae776"},
+            "us-west-2" : {"64" : "ami-e7527ed7"},
+            "us-west-1" : {"64" : "ami-d114f295"},
+            "eu-west-1" : {"64" : "ami-a10897d6"},
+            "eu-central-1" : {"64" : "ami-a8221fb5"},
+            "ap-southeast-1" : {"64" : "ami-68d8e93a"},
+            "ap-northeast-1" : {"64" : "ami-cbf90ecb"},
+            "ap-southeast-2" : {"64" : "ami-fd9cecc7"},
+            "sa-east-1" : {"64" : "ami-b52890a8"}
         },
         "VPNInstanceMap" : {
-            "us-east-1" : {"64" : "ami-20c90348"}
+            "us-east-1" : {"64" : "ami-1ecae776"},
+            "us-west-2" : {"64" : "ami-e7527ed7"},
+            "us-west-1" : {"64" : "ami-d114f295"},
+            "eu-west-1" : {"64" : "ami-a10897d6"},
+            "eu-central-1" : {"64" : "ami-a8221fb5"},
+            "ap-southeast-1" : {"64" : "ami-68d8e93a"},
+            "ap-northeast-1" : {"64" : "ami-cbf90ecb"},
+            "ap-southeast-2" : {"64" : "ami-fd9cecc7"},
+            "sa-east-1" : {"64" : "ami-b52890a8"}
         },
         "MediaInstanceMap" : {
-            "us-east-1" : {"64" : "ami-864d84ee"}        
+            "us-east-1" : {"64" : "ami-864d84ee"},        
+            "us-west-2" : {"64" : "ami-e7b8c0d7"},        
+            "us-west-1" : {"64" : "ami-a7fdfee2"},        
+            "eu-west-1" : {"64" : "ami-0307d674"},        
+            "ap-southeast-1" : {"64" : "ami-12356d40"},        
+            "ap-northeast-1" : {"64" : "ami-a1124fa0"},        
+            "ap-southeast-2" : {"64" : "ami-fddabdc7"},        
+            "sa-east-1" : {"64" : "ami-d5a30ac8"}
         }
     },
     "Conditions" : {
