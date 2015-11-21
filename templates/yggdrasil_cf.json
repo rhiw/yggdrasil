@@ -527,7 +527,7 @@
         "MediaVolume1" : {
             "Type" : "AWS::EC2::Volume",
             "Properties" : {
-                "Size" : "1024",
+                "Size" : "16384",
                 "VolumeType" : "io1",
                 "Iops" : "4000",
                 "AvailabilityZone" : { "Fn::GetAtt" : [ "MediaServer1", "AvailabilityZone" ] }
