@@ -30,7 +30,7 @@ def parse_args():
     parser = optparse.OptionParser()
     parser.add_option('-m', '--mount_point', help='The mount point for the volume to be actively resized')
     parser.add_option('-r', '--ratio', help='The ratio of disk usage at which to add another volume. DEFAULT: .8', default=.8, type='float')
-    parser.add_option('-i', '--increment', help='The size of the volume to add when the ratio is exceeded (GB). DEFAULT: 16384', default=16384, type='int')
+    parser.add_option('-i', '--increment', help='The size of the volume to add when the ratio is exceeded (GB). DEFAULT: 1024', default=1024, type='int')
     parser.add_option('-g', '--logical_group', help='The logical group (LVM) to which the new volume should be added. DEFAULT: media_group')
     parser.add_option('-d', '--logical_device', help='The logical device (LVM) to which the new volume should be added. DEFAULT: logical_media')
 
